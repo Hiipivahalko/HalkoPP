@@ -2,7 +2,7 @@ TARGET_EXEC := final_program.exe
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src
-STD_VERSION := -std=c++17
+STD_VERSION := -std=c++20
 
 # Find all the C and C++ files we want to compile
 # Note the single quotes around the * expressions. Make will incorrectly expand these otherwise.
