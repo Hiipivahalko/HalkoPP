@@ -33,3 +33,5 @@
 
 /build
 /data
+**/gcm.cache
+/.vscode
