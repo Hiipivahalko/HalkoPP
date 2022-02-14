@@ -3,6 +3,7 @@
 #include "./hello.hpp"
 #include "i2b.hpp"
 #include "VByte/vbyte.hpp"
+#include "utils/utils.hpp"
 
 using namespace std;
 
@@ -15,7 +16,7 @@ int main(int argc, char *argv[]) {
   hello::message();
   string lib = (string) argv[1];
   string func = (string) argv[2];
-  string input_file = "./data/" + (string) argv[3];
+  string input_file = (string) argv[3];
 
   if (lib == "int2bin") { // INTEGER 2 BINARY
 
@@ -29,6 +30,8 @@ int main(int argc, char *argv[]) {
     else if (func == "decode") vbyte::decode(input_file); 
 
 
+  } else if (lib == "test") {
+    utils::copy_n_blocks(argv[3], "./data/output.dat", 100000);
   } else {
     cout << "Nothing happened!\n";
   }
