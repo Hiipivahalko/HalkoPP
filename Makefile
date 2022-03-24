@@ -6,7 +6,7 @@ STD_VERSION := -std=c++11
 CXX := g++
 
 # Find all C++ files we want to compile
-SRCS := $(shell find $(SRC_DIRS) -name '*.cpp')
+SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' ! -name 'main.cpp')
 
 # String substitution for every C/C++ file.
 # As an example, hello.cpp turns into ./build/hello.cpp.o
@@ -30,7 +30,7 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP -Wall -Weffc++ -Wextra -Wsign-conversion
 
 # The final build step.
 $(TARGET_EXEC): $(OBJS)
-	$(CXX) $(STD_VERSION) $(OBJS) -o $@ -O2
+	$(CXX) $(STD_VERSION) src/main.cpp $(OBJS) -o $@ -O2
 
 
 # Build step for C++ source

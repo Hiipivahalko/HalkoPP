@@ -4,6 +4,7 @@
 #include "i2b.hpp"
 #include "VByte/vbyte.hpp"
 #include "bitArray/bitArray.hpp"
+#include "utils/utils.hpp"
 
 using namespace std;
 
@@ -14,9 +15,6 @@ int main(int argc, char *argv[]) {
   //  exit(1);
   //}
   hello::message();
-  //string lib = (string) argv[1];
-  //string func = (string) argv[2];
-  //string input_file = "./data/" + (string) argv[3];
 
   //if (lib == "int2bin") { // INTEGER 2 BINARY
 
