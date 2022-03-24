@@ -36,7 +36,7 @@ $(TARGET_EXEC): $(OBJS)
 # Build step for C++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(STD_VERSION) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(STD_VERSION) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -O2
 
 .PHONY: clean
 clean:

@@ -1,11 +1,10 @@
 #include "./vbyte.hpp"
 #include "../utils/utils.hpp"
 
-typedef u_int64_t u_ll;
 
 namespace vbyte {
   // VByte encode 64-bit integer
-  std::vector<u_int32_t> encodeInteger(u_ll x) {
+  std::vector<u_int32_t> encodeInteger(uint64_t x) {
     std::vector<u_int32_t> seq;
     while (true) {
       u_int32_t r = x % 128;
@@ -30,7 +29,7 @@ namespace vbyte {
 
     // read input file and encode integers from the file
     if (input_stream.is_open()) {
-      u_ll x;
+      uint64_t x;
       //std::cout << sizeof(x) << "here\n";
       while (input_stream.read((char *)&x, sizeof(x))) {
         //std::cout << x << std::endl;
@@ -47,8 +46,8 @@ namespace vbyte {
   }
 
   // compose vbyte parts to one integer
-  u_ll composeBytes(const std::vector<u_int32_t> &vbytes) {
-    u_ll result = 0;
+  uint64_t composeBytes(const std::vector<u_int32_t> &vbytes) {
+    uint64_t result = 0;
     for (int32_t i = (int) vbytes.size()-1; i >= 0; i--) {
       result += vbytes[i];
       if (i != 0) result *= 128;
@@ -61,12 +60,12 @@ namespace vbyte {
     std::string output_file = input_file + ".dec";
     std::ifstream input_stream(input_file, std::ios::binary);
     std::ofstream output_stream(output_file, std::ios::binary);
-    
-    if (input_stream.is_open()) { // check that we can read file 
+
+    if (input_stream.is_open()) { // check that we can read file
       // reading bytes from inputfile and decoding VBytes back to normal format into outputfile "<outputfile>.vb.dec"
       int32_t x;
       std::vector<u_int32_t> v;
-      u_ll decomp_int = 0;
+      uint64_t decomp_int = 0;
       char c;
       while (input_stream.read(&c, 1)) {
         x = c;
@@ -79,7 +78,7 @@ namespace vbyte {
           output_stream.write((char *) &decomp_int, sizeof(decomp_int));
           v.clear();
         } else v.push_back(x);
-        
+
       }
     } else std::cout << "could not open the file\n";
 

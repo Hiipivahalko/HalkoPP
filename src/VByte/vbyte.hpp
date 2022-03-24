@@ -1,3 +1,6 @@
+#ifndef _VBYTE_VBYTE_HPP_
+#define _VBYTE_VBYTE_HPP_
+
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -8,3 +11,5 @@ namespace vbyte {
   void encode(std::string input_file);
   void decode(std::string input_file);
 }
+
+#endif
