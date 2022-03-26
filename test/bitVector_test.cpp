@@ -39,11 +39,14 @@ TEST(BitVectorTest, BitVectorSimpleTest) {
 
 }
 
+// testing 1000 bit vectors by assigning values randomly 1 or 0
+// bit vectors lenght are in range [30,1030]
 TEST(BitVectorTest, BitVectorRandomTest) {
     for (int i = 1; i <= 1000; i++) {
-        int n = rand() % 1000 + 30;
+        int n = rand() % 1000 + 30; // length of the bit vector
         BitVector bv = BitVector(n);
         int a[n+1]{0};
+        // loop values 1..n and set i th value to one or zero by random
         for (int k = 1; k <= n; k++) {
             int val = rand() % 2;
             bool bitVal = val == 1 ? true : false;
@@ -51,7 +54,8 @@ TEST(BitVectorTest, BitVectorRandomTest) {
             a[k] = val;
         }
 
-        for (int k = 1; k <= n; k++) EXPECT_EQ(bv.get(k), a[k]);
+        // test bv[k] and a[k] have same value
+        for (int k = 1; k <= n; k++) EXPECT_EQ(bv.get(k), a[k]) << "bv[k] != a[k]";
     }
 }
 //}
