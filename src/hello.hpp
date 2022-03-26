@@ -3,7 +3,8 @@
 
 #include <iostream>
 namespace hello {
-  void message();
+    void message();
+    int power2(int x);
 }
 //void message();
 //

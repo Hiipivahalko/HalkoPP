@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
   //  cout << "Nothing happened!\n";
   //}
 
-  BitArray bv = BitArray(10);
+  BitVector bv = BitVector(10);
   bv.print_array();
   bv.set(10, true);
   bv.print_array();

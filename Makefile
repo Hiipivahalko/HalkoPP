@@ -1,4 +1,4 @@
-TARGET_EXEC := cpp-libs.exe
+TARGET_EXEC := cpp-libs
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src

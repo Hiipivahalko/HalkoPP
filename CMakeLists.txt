@@ -15,22 +15,23 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(
-  hello_test
-  ./src/test/hello_test.cpp
-)
+#file(GLOB files_for_tests CONFIGURE_DEPENDS "./src/*.cpp""./src/**/*.cpp" "./test/*.cpp")
+#message(STATUS " >> ALL CPP FILES: ${files_for_tests}")
 
 add_executable(
-  bit_vector_test
-  ./src/test/bit_vector_test.cpp
+  hello_test
+  ./src/hello.cpp
+  ./src/bitArray/bitArray.cpp
+  ./test/hello_test.cpp
+  ./test/bitVector_test.cpp
+  #${files_for_tests}
 )
+
 target_link_libraries(
   hello_test
-  bit_vector_test
   gtest_main
 )
 
 include(GoogleTest)
 gtest_discover_tests(hello_test)
-gtest_discover_tests(bit_vector_test)
 

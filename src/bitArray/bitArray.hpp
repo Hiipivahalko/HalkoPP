@@ -5,14 +5,15 @@
 #include <algorithm>
 
 
-class BitArray {
+class BitVector {
   public:
     uint64_t *arr;
     uint64_t last_bit;
     uint64_t arr_length;
     uint32_t block_length;
 
-    BitArray(const uint64_t n);
+    BitVector(const uint64_t n);
+    ~BitVector();
 
     int get(const uint64_t i) const;
     // set i-th bit value to 1 or 0
