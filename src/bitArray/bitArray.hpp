@@ -21,6 +21,12 @@ class BitVector {
     // printing bit array values. Each block is printed its own line.
     // Block bits are speareted with space every 8 bits.
     void print_array();
+
+    uint32_t rank1(uint32_t i); // number of ones <= i
+    uint32_t rank0(uint32_t i); // number of zeros <= i
+
+    uint32_t select1(uint32_t); // index of (i-1)th one
+    uint32_t select0(uint32_t); // index of (i-1)th zero
 };
 
 #endif
