@@ -32,12 +32,16 @@ int main(int argc, char *argv[]) {
   //  cout << "Nothing happened!\n";
   //}
 
-  BitVector bv = BitVector(10);
-  bv.print_array();
-  bv.set(10, true);
-  bv.print_array();
-  bv.set(8, true);
-  bv.print_array();
+  //BitVector bv = BitVector(10);
+  //bv.print_array();
+  //bv.set(10, true);
+  //bv.print_array();
+  //bv.set(8, true);
+  //bv.print_array();
+  //
+
+  string output_file = "data/small_sample2.dat";
+  iTob::encode(output_file);
 
 
   return 0;
