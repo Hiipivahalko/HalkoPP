@@ -2,6 +2,14 @@
 
 Repository to for my own cpp-libraries. Some functions could be find in other libraries. Purpose test implementing things by own.
 
+## Docs
+
+Run following command to get mkdocs server for documentation or read from [here](./docs)
+
+```bash
+mkdocs serve
+```
+
 ## Compile program
 
 Run following command in root of the project to compile source files:

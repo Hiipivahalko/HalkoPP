@@ -1,5 +1,5 @@
 
-#include "../src/bitArray/bitArray.hpp"
+#include "../src/bitArray/bitVector.hpp"
 #include <gtest/gtest.h>
 #include <random>
 

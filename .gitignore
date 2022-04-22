@@ -37,3 +37,4 @@
 /.vscode
 
 /build_test
+/compile_commands.json
