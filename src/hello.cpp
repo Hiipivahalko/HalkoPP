@@ -2,7 +2,7 @@
 
 namespace hello {
   void message() {
-    std::cout << "Hello World\n";
+    std::cerr << "Hello World\n";
   }
 
   int power2(int x ){

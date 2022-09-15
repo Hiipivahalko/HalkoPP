@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void read_input_file(const char *input_file, vector<uint64_t> &seq_ref, uint64_t nn) {
+void read_input_file2(const char *input_file, vector<uint64_t> &seq_ref, uint64_t nn) {
   FILE *fp = fopen(input_file, "r");
   uint64_t u, n;
 
@@ -36,7 +36,7 @@ void copy_n_blocks(const char *input_file, const string &output_file, const u_in
   ofstream ofs(output_file, ios::binary);
   vector<u_int64_t> v;
 
-  read_input_file(input_file, v, n);
+  read_input_file2(input_file, v, n);
   u_int64_t *t;
   for (u_int64_t i = 0; i < n; i++) {
     t = &v[i];
@@ -45,4 +45,13 @@ void copy_n_blocks(const char *input_file, const string &output_file, const u_in
   }
   ofs.close();
 }
+
+string current_time2str() {
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    string curr_time = to_string(1900 + ltm->tm_year) + "_" + to_string(1 + ltm->tm_mon) + "_" + to_string(ltm->tm_mday) +
+        "_" + to_string(ltm->tm_hour) + to_string(ltm->tm_min) + to_string(ltm->tm_sec);
+    return curr_time;
+}
+
 }  // namespace utils

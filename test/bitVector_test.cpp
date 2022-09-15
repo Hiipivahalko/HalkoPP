@@ -2,6 +2,7 @@
 #include "../src/bitArray/bitVector.hpp"
 #include <gtest/gtest.h>
 #include <random>
+#include <vector>
 
 using namespace std;
 
@@ -21,21 +22,21 @@ TEST(BitVectorTest, BitVectorSimpleTest) {
 
   BitVector bv_ = BitVector(1);
 
-  EXPECT_EQ(bv_.get(1), 0) << "Bit 1 was not set to 0 (false)"; // first bit is zero;
+  EXPECT_EQ(bv_.access(1), 0) << "Bit 1 was not set to 0 (false)"; // first bit is zero;
 
   bv_.set(1, true);
 
-  EXPECT_EQ(bv_.get(1), 1); // first bit is zero;
+  EXPECT_EQ(bv_.access(1), 1); // first bit is zero;
   bv_.set(1, false);
-  EXPECT_EQ(bv_.get(1), 0) << "Bit 1 was not set to 0 (false)"; // first bit is zero;
+  EXPECT_EQ(bv_.access(1), 0) << "Bit 1 was not set to 0 (false)"; // first bit is zero;
 
 
   BitVector bv2_ = BitVector(10);
-  for (int i = 1; i <= 10; i++ ) EXPECT_EQ(bv2_.get(i), 0);
+  for (int i = 1; i <= 10; i++ ) EXPECT_EQ(bv2_.access(i), 0);
   for (int i = 1; i <= 10; i++ ) bv2_.set(i, true);
-  for (int i = 1; i <= 10; i++ ) EXPECT_EQ(bv2_.get(i), 1);
+  for (int i = 1; i <= 10; i++ ) EXPECT_EQ(bv2_.access(i), 1);
   for (int i = 1; i <= 10; i++ ) bv2_.set(i, false);
-  for (int i = 1; i <= 10; i++ ) EXPECT_EQ(bv2_.get(i), 0);
+  for (int i = 1; i <= 10; i++ ) EXPECT_EQ(bv2_.access(i), 0);
 
 }
 
@@ -45,7 +46,7 @@ TEST(BitVectorTest, BitVectorRandomTest) {
     for (int i = 1; i <= 1000; i++) {
         int n = rand() % 1000 + 30; // length of the bit vector
         BitVector bv = BitVector(n);
-        int a[n+1]{0};
+        vector<int> a(n+1);
         // loop values 1..n and set i th value to one or zero by random
         for (int k = 1; k <= n; k++) {
             int val = rand() % 2;
@@ -55,7 +56,7 @@ TEST(BitVectorTest, BitVectorRandomTest) {
         }
 
         // test bv[k] and a[k] have same value
-        for (int k = 1; k <= n; k++) EXPECT_EQ(bv.get(k), a[k]) << "bv[k] != a[k]";
+        for (int k = 1; k <= n; k++) EXPECT_EQ(bv.access(k), a[k]) << "bv[k] != a[k]";
     }
 }
 //}

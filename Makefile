@@ -1,12 +1,16 @@
-TARGET_EXEC := cpp-libs
+TARGET_EXEC := halkoPP
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src
 STD_VERSION := -std=c++11
 CXX := g++
+SDSL_INCLUDE := ./external/cpp_libs/include
+SDSL_LIB := ./external/cpp_libs/lib
+LIBS := -I${SDSL_INCLUDE} -L${SDSL_LIB}
 
 # Find all C++ files we want to compile
-SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' ! -name 'main.cpp')
+# SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' ! -name 'main.cpp')
+SRCS := $(shell find $(SRC_DIRS) -name '*.cpp')
 
 # String substitution for every C/C++ file.
 # As an example, hello.cpp turns into ./build/hello.cpp.o
@@ -29,14 +33,14 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP -Wall -Weffc++ -Wextra -Wsign-conversion
 
 
 # The final build step.
-$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(STD_VERSION) src/main.cpp $(OBJS) -o $@ -O2
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
+	$(CXX) $(STD_VERSION) $(LIBS) $(OBJS) -o $@ -O2 -lsdsl -ldivsufsort -ldivsufsort64
 
 
 # Build step for C++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(STD_VERSION) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -O2
+	$(CXX) $(STD_VERSION) $(LIBS) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -O2
 
 .PHONY: clean
 clean:

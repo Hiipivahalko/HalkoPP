@@ -1,5 +1,21 @@
 #!/bin/bash
+(cmake -S . -B test/build && cmake --build test/build) || exit 1 # compile tests
+cd test/build
 
-cmake -S . -B build_test
-cmake --build build_test
-cd build_test && ctest && cd .. || cd ..
+clear
+
+# run tests
+if [ $# -eq 0 ]; then
+    ./halkoPP_test && cd ../.. || cd ../..
+    exit 0
+fi
+
+case $1 in
+    input)
+        ./halkoPP_test --gtest_color=yes --gtest_brief=1 --gtest_filter="${2}*" && cd ../.. || cd ../..
+        ;;
+    *)
+        echo ">> nothing tested"
+        ;;
+
+esac

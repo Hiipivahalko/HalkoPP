@@ -17,7 +17,7 @@ BitVector::~BitVector() {
 }
 
 
-int BitVector::get(const uint64_t i) const {
+int BitVector::access(const uint64_t i) const {
     return (arr[ ((i-1) / block_length) ] >> ((i-1) % block_length)) & I;
 }
 
@@ -34,7 +34,7 @@ void BitVector::print_array() {
     for (uint64_t i = last_bit; i > 0; i--) {
         if (i % 64 == 0) cout << "\n";
         if (i % 8 == 0) cout << " ";
-        cout << get(i);
+        cout << access(i);
     }
     cout << "\n";
 }
