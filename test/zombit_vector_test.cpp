@@ -130,6 +130,7 @@ uint64_t scan_nextGEQ(sdsl::bit_vector &bv, uint64_t x) {
 }
 
 //using TestTypes = ::testing::Types< zombit_bv_bv_bv_test >;
+//using TestTypes = ::testing::Types< zombit_bvIL_bvIL_bvIL_test >;
 using TestTypes = ::testing::Types< zombit_bv_bv_bv_test,zombit_bvIL_bvIL_bvIL_test,zombit_sd_sd_sd_test,zombit_rrr_rrr_rrr_test >;
 TYPED_TEST_CASE(ZombitTest, TestTypes);
 
@@ -137,7 +138,7 @@ TYPED_TEST(ZombitTest, zombitArticleValues) {
 
     sdsl::bit_vector bv = {1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0};
     uint32_t b = 2;
-    this->zom_vec.build_zombit(bv,b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     sdsl::bit_vector u_res = {1,0,1,0,1,0,1,1};
     sdsl::bit_vector o_res = {1,1,0,1,1,1,0,0};
@@ -152,7 +153,7 @@ TYPED_TEST(ZombitTest, zombitSmallTest1) {
 
     sdsl::bit_vector bv = {1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0};
     uint32_t b = 4;
-    this->zom_vec.build_zombit(bv,b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     sdsl::bit_vector u_res = {0,0,0,1};
     sdsl::bit_vector o_res = sdsl::bit_vector();
@@ -167,7 +168,7 @@ TYPED_TEST(ZombitTest, zombitSmallTest2) {
 
     sdsl::bit_vector bv = {1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0};
     uint32_t b = 3;
-    this->zom_vec.build_zombit(bv,b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     sdsl::bit_vector u_res = {1,1,0,0,1,1};
     sdsl::bit_vector o_res = {1,0,1,1,0,0};
@@ -178,12 +179,13 @@ TYPED_TEST(ZombitTest, zombitSmallTest2) {
     for (uint32_t i = 0; i < m_res.size(); i++) ASSERT_EQ(this->zom_vec.m_vector[i], m_res[i]);
 }
 
+// recursion level 0
 TYPED_TEST(ZombitTest, access_all_zeros) {
     sdsl::bit_vector bv = { 0,0,0,0,0,0,0,0,0,0 };
     uint32_t bv_size = bv.size();
     uint32_t b = 2;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]);
 }
@@ -194,7 +196,7 @@ TYPED_TEST(ZombitTest, access_all_ones) {
     uint32_t bv_size = bv.size();
     uint32_t b = 2;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]);
 }
@@ -204,7 +206,7 @@ TYPED_TEST(ZombitTest, access_all_small1) {
     uint32_t bv_size = bv.size();
     uint32_t b = 2;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]);
 }
@@ -214,7 +216,7 @@ TYPED_TEST(ZombitTest, access_small2) {
     uint32_t bv_size = bv.size();
     uint32_t b = 2;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]) << " i:" << i << std::endl;
 }
@@ -224,7 +226,7 @@ TYPED_TEST(ZombitTest, access_small3) {
     uint32_t bv_size = bv.size();
     uint32_t b = 2;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]) << " i:" << i << std::endl;
 }
@@ -234,7 +236,7 @@ TYPED_TEST(ZombitTest, access_small4) {
     uint32_t bv_size = bv.size();
     uint32_t b = 2;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]) << " i:" << i << std::endl;
 }
@@ -244,7 +246,7 @@ TYPED_TEST(ZombitTest, access_small5) {
     uint32_t bv_size = bv.size();
     uint32_t b = 3;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]) << " i:" << i << std::endl;
 }
@@ -254,30 +256,54 @@ TYPED_TEST(ZombitTest, access_small6) {
     uint32_t bv_size = bv.size();
     uint32_t b = 4;
 
-    this->zom_vec.build_zombit(bv, b);
+    this->zom_vec.build_zombit(bv,0,b);
 
     for (uint32_t i = 0; i < bv_size; i++) ASSERT_EQ(this->zom_vec.access(i), bv[i]) << " i:" << i << std::endl;
 }
 
+TYPED_TEST(ZombitTest, access_random_bv1_small) {
+    int rounds = 10000;
+    srand(1);
+    vector<int> rec = {0,1,2,3,4,5};
+    for (int i = 0; i < rounds; i++) {
+        for (int r = 0; r < rec.size(); r++) {
+            int n = rand() % 20 + 90; // size of the bv
+            int m = rand() % n; // number of 1s
+            vector<int> ones(n);
+            for (int j = 0; j < n; j++) ones[j] = j;
+            auto rng = std::default_random_engine {};
+            std::shuffle(std::begin(ones), std::end(ones), rng);
+            sdsl::bit_vector bv(n);
+            for (int j = 0; j < m; j++) bv[ones[j]] = 1;
+            bv[n-1] = 1;
+            this->zom_vec.build_zombit(bv,0);
+            for (int x = 0; x < n; x++) {
+                ASSERT_EQ(this->zom_vec.access(x), bv[x]);
+            }
+        }
+    }
+}
 
 // NextGEQ tests
 TYPED_TEST(ZombitTest, random_bv1_small) {
     int rounds = 10000;
     srand(1);
+    vector<int> rec = {0,1,2,3,4,5};
     for (int i = 0; i < rounds; i++) {
-        int n = rand() % 20 + 90; // size of the bv
-        int m = rand() % n; // number of 1s
-        vector<int> ones(n);
-        for (int j = 0; j < n; j++) ones[j] = j;
-        auto rng = std::default_random_engine {};
-        std::shuffle(std::begin(ones), std::end(ones), rng);
-        sdsl::bit_vector bv(n);
-        for (int j = 0; j < m; j++) bv[ones[j]] = 1;
-        bv[n-1] = 1;
-        this->zom_vec.build_zombit(bv);
-        for (int x = 0; x < n; x++) {
-            ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
-            //std::cout << "\n";
+        for (int r = 0; r < rec.size(); r++) {
+            int n = rand() % 20 + 90; // size of the bv
+            int m = rand() % n; // number of 1s
+            vector<int> ones(n);
+            for (int j = 0; j < n; j++) ones[j] = j;
+            auto rng = std::default_random_engine {};
+            std::shuffle(std::begin(ones), std::end(ones), rng);
+            sdsl::bit_vector bv(n);
+            for (int j = 0; j < m; j++) bv[ones[j]] = 1;
+            bv[n-1] = 1;
+            this->zom_vec.build_zombit(bv,0);
+            for (int x = 0; x < n; x++) {
+                ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
+            }
         }
     }
 }
@@ -285,38 +311,42 @@ TYPED_TEST(ZombitTest, random_bv1_small) {
 TYPED_TEST(ZombitTest, random_bv1_big) {
     int rounds = 100;
     //srand(1);
+    vector<int> rec = {0,1,2,3,4,5};
     for (int i = 0; i < rounds; i++) {
-        int n = rand() % 200 + 10000; // size of the bv
-        int m = rand() % n; // number of 1s
-        vector<int> ones(n);
-        for (int j = 0; j < n; j++) ones[j] = j;
-        auto rng = std::default_random_engine {};
-        std::shuffle(std::begin(ones), std::end(ones), rng);
-        sdsl::bit_vector bv(n);
-        for (int j = 0; j < m; j++) bv[ones[j]] = 1;
-        bv[n-1] = 1;
-        this->zom_vec.build_zombit(bv);
-        for (int x = 0; x < n; x++) {
-            ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
-            //std::cout << "\n";
+        for (int r = 0; r < rec.size(); r++) {
+            int n = rand() % 200 + 10000; // size of the bv
+            int m = rand() % n; // number of 1s
+            vector<int> ones(n);
+            for (int j = 0; j < n; j++) ones[j] = j;
+            auto rng = std::default_random_engine {};
+            std::shuffle(std::begin(ones), std::end(ones), rng);
+            sdsl::bit_vector bv(n);
+            for (int j = 0; j < m; j++) bv[ones[j]] = 1;
+            bv[n-1] = 1;
+            this->zom_vec.build_zombit(bv,0);
+            for (int x = 0; x < n; x++) {
+                ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
+            }
         }
     }
 }
 
-// be sure that all bit vectors ends to 1, this helps tests
 
 TYPED_TEST(ZombitTest, NextGEQSmall1) {
 
     sdsl::bit_vector bv = { 1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1 };
     uint32_t bv_size = bv.size();
     std::vector<uint32_t> blocks = {2,3,4};
-    for (uint32_t b : blocks) {
+    vector<int> rec = {0,1};
+    for (int r = 0; r < rec.size(); r++) {
+        for (uint32_t b : blocks) {
 
-      sdsl::bit_vector bv_temp = sdsl::bit_vector(bv);
-      this->zom_vec.build_zombit(bv_temp, b);
+          sdsl::bit_vector bv_temp = sdsl::bit_vector(bv);
+          this->zom_vec.build_zombit(bv,0,b);
 
-      for (uint32_t x = 0; x < bv_size; x++) {
-        ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv_temp, x));
-      }
+          for (uint32_t x = 0; x < bv_size; x++) {
+            ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv_temp, x));
+          }
+        }
     }
 }

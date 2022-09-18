@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
         zombit_bv_bv_bv zom_bv{};
         std::string label = "<bv,bv,bv>";
         cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,b);
+        zom_bv.build_zombit(bv,0,b);
         cerr << "building DONE\n";
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
         benchmark_zombit(zom_bv, label, benchmark_quesries);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 		zombit_rrr_rrr_rrr zom_bv{};
         std::string label = "<rrr,rrr,rrr>";
         cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,b);
+        zom_bv.build_zombit(bv,0,b);
         cerr << "building DONE\n";
 
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
         zombit_sd_sd_sd zom_bv{};
         std::string label = "<sd,sd,sd>";
         cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,b);
+        zom_bv.build_zombit(bv,0,b);
         cerr << "building DONE\n";
 
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 
         std::string label = "<bv_il,bv_il,bv_il>";
         cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,b);
+        zom_bv.build_zombit(bv,0,b);
         cerr << "building DONE\n";
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
         benchmark_zombit(zom_bv, label, benchmark_quesries);
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
         zombit_hyb_rrr_rrr zom_bv{};
         std::string label = "<hyb,rrr,rrr>";
         cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,b);
+        zom_bv.build_zombit(bv,0,b);
         cerr << "building DONE\n";
 
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
