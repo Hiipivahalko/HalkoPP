@@ -12,6 +12,23 @@ mkdocs serve
 
 Then go to url `http://localhost:8000`
 
+## Prerequirements
+
+```bash
+mkdir -p external/cpp_libs
+```
+* Install [SDSL](https://github.com/simongog/sdsl-lite)-libary (see install instructions from link) to
+`adaptive_sunccintness/external/cpp_libs` or modify `Makefile` SDSL config paths.
+
+### Optional config
+
+For VIM run following command after external lib installation for coc.vim to find sources:
+
+```bash
+bear -- make
+```
+This command creates file `compile_commands.json`.
+
 ## Compile program
 
 Run following command in root of the project to compile source files:
@@ -23,7 +40,7 @@ make
 To run the program execute on terminal
 
 ```bash
-./build/cpp-libs
+./build/halkoPP
 ```
 
 ## TEST libraries
