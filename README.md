@@ -18,7 +18,7 @@ Then go to url `http://localhost:8000`
 mkdir -p external/cpp_libs
 ```
 * Install [SDSL](https://github.com/simongog/sdsl-lite)-libary (see install instructions from link) to
-`adaptive_sunccintness/external/cpp_libs` or modify `Makefile` SDSL config paths.
+`<repo-root>/external/cpp_libs` or modify `Makefile` SDSL config paths.
 
 ### Optional config
 
