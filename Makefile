@@ -34,13 +34,13 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP -Wall -Weffc++ -Wextra -Wsign-conversion
 
 # The final build step.
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(STD_VERSION) $(LIBS) $(OBJS) -o $@ -O2 -lsdsl -ldivsufsort -ldivsufsort64
+	$(CXX) $(STD_VERSION) $(LIBS) $(OBJS) -o $@ -O3 -lsdsl -ldivsufsort -ldivsufsort64
 
 
 # Build step for C++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(STD_VERSION) $(LIBS) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -O2
+	$(CXX) $(STD_VERSION) $(LIBS) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -O3
 
 .PHONY: clean
 clean:

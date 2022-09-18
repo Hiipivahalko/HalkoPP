@@ -118,16 +118,21 @@ void print_zombit_size_test_res(T &zombit,  std::string label, uint32_t b, uint6
         cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits());
         cout << ";" << ((float)zombit.o_vector_size_in_bits() / zombit.size_in_bits());
         cout << ";" << ((float)zombit.m_vector_size_in_bits() / zombit.size_in_bits());
-        cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << "\n";
+        cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n;
 }
 
 template <class T>
-void benchmark_zombit(T &zombit) {
-    uint64_t n = 1000000;
-    uint64_t u = zombit.size();
-    vector<uint64_t> r(n);
-    for (uint32_t i = 0; i < n; i++) r[i] = rand() % u + 1;
-    //for ()
+void benchmark_zombit(T &zombit, std::string label, vector<uint64_t> &r) {
+    chrono::duration<double, std::milli> ms_double;
+    double time_avg = 0;
+    for (uint64_t i = 0; i < r.size(); i++) {
+        auto t1 = chrono::high_resolution_clock::now();
+        zombit.nextGEQ(r[i]);
+        auto t2 = chrono::high_resolution_clock::now();
+        ms_double = t2 - t1;
+        time_avg += ms_double.count();
+    }
+    std::cout << ";" << time_avg << "\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -182,16 +187,22 @@ int main(int argc, char *argv[]) {
     //vector<uint32_t> block_sizes = {32};
     // bloc size 10 is the article "optimal"
     vector<uint32_t> block_sizes = {8,10,16,32,64,128,256,512,1024,2048};
+    uint64_t n = bv.size() > 1000000 ? 1000000 : bv.size();
+    uint64_t u = bv.size();
+    vector<uint64_t> benchmark_quesries(n);
+    srand(0);
+    for (uint32_t i = 0; i < n; i++) benchmark_quesries[i] = rand() % u + 1;
 
     cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s\n";
     // bit_vector, bit_vector, bit_vector
     for (uint32_t b : block_sizes ) {
         zombit_bv_bv_bv zom_bv{};
-
-        cerr << ">> building zombit<bv,bv,bv>-" << b << " ...";
+        std::string label = "<bv,bv,bv>";
+        cerr << ">> building zombit" << label << "-" << b << " ...";
         zom_bv.build_zombit(bv,b);
         cerr << "building DONE\n";
-        print_zombit_size_test_res(zom_bv, "<bv,bv,bv>", b, postings_list_size);
+        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
+        benchmark_zombit(zom_bv, label, benchmark_quesries);
     }
     //  rrr, rrr, rrr
     for (uint32_t b : block_sizes ) {
@@ -202,6 +213,7 @@ int main(int argc, char *argv[]) {
         cerr << "building DONE\n";
 
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
+        benchmark_zombit(zom_bv, label, benchmark_quesries);
     }
     //  sd,sd,sd
     for (uint32_t b : block_sizes ) {
@@ -212,15 +224,18 @@ int main(int argc, char *argv[]) {
         cerr << "building DONE\n";
 
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
+        benchmark_zombit(zom_bv, label, benchmark_quesries);
     }
     // bit_vector_il, bit_vector_il, bit_vector_il
     for (uint32_t b : block_sizes ) {
         zombit_bvIL_bvIL_bvIL zom_bv{};
 
-        cerr << ">> building zombit<bv_il,bv_il,bv_il>-" << b << " ...";
+        std::string label = "<bv_il,bv_il,bv_il>";
+        cerr << ">> building zombit" << label << "-" << b << " ...";
         zom_bv.build_zombit(bv,b);
         cerr << "building DONE\n";
-        print_zombit_size_test_res(zom_bv, "<bv_il,bv_il,bv_il>", b, postings_list_size);
+        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
+        benchmark_zombit(zom_bv, label, benchmark_quesries);
     }
     //  hyb, rrr, rrr
     for (uint32_t b : block_sizes ) {
@@ -231,6 +246,7 @@ int main(int argc, char *argv[]) {
         cerr << "building DONE\n";
 
         print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
+        benchmark_zombit(zom_bv, label, benchmark_quesries);
     }
     curr_time = utils::current_time2str();
     cerr << ">> Program END time: " << curr_time << endl;
