@@ -106,7 +106,7 @@ void create_bit_vector(sdsl::bit_vector &bv, const vector<uint64_t> &vec_ref, co
 }
 
 template <class T>
-void print_zombit_size_test_res(T &zombit,  std::string label, uint32_t b, uint64_t postings_list_size) {
+void print_zombit_size_test_res(T &zombit,  std::string label, uint32_t b, uint64_t postings_list_size, uint32_t r) {
 
 
         float bpp = (float) zombit.size_in_bits() / postings_list_size;
@@ -118,7 +118,7 @@ void print_zombit_size_test_res(T &zombit,  std::string label, uint32_t b, uint6
         cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits());
         cout << ";" << ((float)zombit.o_vector_size_in_bits() / zombit.size_in_bits());
         cout << ";" << ((float)zombit.m_vector_size_in_bits() / zombit.size_in_bits());
-        cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n;
+        cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << ";" << r;
 }
 
 template <class T>
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
     //sdsl::store_to_file(bv, "./gov2_as_bitvector.dat");
 
-    //vector<uint32_t> block_sizes = {32};
+    //vector<uint32_t> block_sizes = {32, 64};
     // bloc size 10 is the article "optimal"
     vector<uint32_t> block_sizes = {8,10,16,32,64,128,256,512,1024,2048};
     uint64_t n = bv.size() > 1000000 ? 1000000 : bv.size();
@@ -193,60 +193,66 @@ int main(int argc, char *argv[]) {
     srand(0);
     for (uint32_t i = 0; i < n; i++) benchmark_quesries[i] = rand() % u + 1;
 
-    cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s\n";
+    cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s;recursio level;nextGEQ avg (ms)\n";
     // bit_vector, bit_vector, bit_vector
     for (uint32_t b : block_sizes ) {
-        zombit_bv_bv_bv zom_bv{};
-        std::string label = "<bv,bv,bv>";
-        cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,0,b);
-        cerr << "building DONE\n";
-        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
-        benchmark_zombit(zom_bv, label, benchmark_quesries);
+        for (uint32_t r = 0; r < 6; r++) {
+            zombit_bv_bv_bv zom_bv{};
+            std::string label = "<bv,bv,bv>";
+            cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
+            zom_bv.build_zombit(bv,r,b);
+            cerr << "building DONE\n";
+            print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
+            benchmark_zombit(zom_bv, label, benchmark_quesries);
+        }
     }
     //  rrr, rrr, rrr
     for (uint32_t b : block_sizes ) {
-		zombit_rrr_rrr_rrr zom_bv{};
-        std::string label = "<rrr,rrr,rrr>";
-        cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,0,b);
-        cerr << "building DONE\n";
-
-        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
-        benchmark_zombit(zom_bv, label, benchmark_quesries);
+        for (uint32_t r = 0; r < 6; r++) {
+            zombit_rrr_rrr_rrr zom_bv{};
+            std::string label = "<rrr,rrr,rrr>";
+            cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
+            zom_bv.build_zombit(bv,r,b);
+            cerr << "building DONE\n";
+            print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
+            benchmark_zombit(zom_bv, label, benchmark_quesries);
+        }
     }
     //  sd,sd,sd
     for (uint32_t b : block_sizes ) {
-        zombit_sd_sd_sd zom_bv{};
-        std::string label = "<sd,sd,sd>";
-        cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,0,b);
-        cerr << "building DONE\n";
-
-        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
-        benchmark_zombit(zom_bv, label, benchmark_quesries);
+        for (uint32_t r = 0; r < 6; r++) {
+            zombit_sd_sd_sd zom_bv{};
+            std::string label = "<sd,sd,sd>";
+            cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
+            zom_bv.build_zombit(bv,r,b);
+            cerr << "building DONE\n";
+            print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
+            benchmark_zombit(zom_bv, label, benchmark_quesries);
+        }
     }
-    // bit_vector_il, bit_vector_il, bit_vector_il
-    for (uint32_t b : block_sizes ) {
-        zombit_bvIL_bvIL_bvIL zom_bv{};
-
-        std::string label = "<bv_il,bv_il,bv_il>";
-        cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,0,b);
-        cerr << "building DONE\n";
-        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
-        benchmark_zombit(zom_bv, label, benchmark_quesries);
-    }
+    //// bit_vector_il, bit_vector_il, bit_vector_il
+    //for (uint32_t b : block_sizes ) {
+    //    for (uint32_t r = 0; r < 6; r++) {
+    //        zombit_bvIL_bvIL_bvIL zom_bv{};
+    //        std::string label = "<bv_il,bv_il,bv_il>";
+    //        cerr << ">> building zombit" << label << "-" << b << " ...";
+    //        zom_bv.build_zombit(bv,r,b);
+    //        cerr << "building DONE\n";
+    //        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
+    //        benchmark_zombit(zom_bv, label, benchmark_quesries);
+    //    }
+    //}
     //  hyb, rrr, rrr
     for (uint32_t b : block_sizes ) {
-        zombit_hyb_rrr_rrr zom_bv{};
-        std::string label = "<hyb,rrr,rrr>";
-        cerr << ">> building zombit" << label << "-" << b << " ...";
-        zom_bv.build_zombit(bv,0,b);
-        cerr << "building DONE\n";
-
-        print_zombit_size_test_res(zom_bv, label, b, postings_list_size);
-        benchmark_zombit(zom_bv, label, benchmark_quesries);
+        for (uint32_t r = 0; r < 6; r++) {
+            zombit_hyb_rrr_rrr zom_bv{};
+            std::string label = "<hyb,rrr,rrr>";
+            cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
+            zom_bv.build_zombit(bv,r,b);
+            cerr << "building DONE\n";
+            print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
+            benchmark_zombit(zom_bv, label, benchmark_quesries);
+        }
     }
     curr_time = utils::current_time2str();
     cerr << ">> Program END time: " << curr_time << endl;
