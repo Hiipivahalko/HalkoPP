@@ -251,23 +251,6 @@ uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_
     return orig_bv_size;
 }
 
-
-template <
-    typename T_u_vec, typename T_u_vec_rank,
-    typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
-    typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
-    >
-uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits() {
-    return (sdsl::size_in_bytes(u_vector) * 8) + \
-        (sdsl::size_in_bytes(u_rank) * 8) + \
-        (sdsl::size_in_bytes(o_vector) * 8) + \
-        (sdsl::size_in_bytes(m_vector) * 8) + \
-        (sdsl::size_in_bytes(o_rank) * 8) + \
-        (sdsl::size_in_bytes(o_select) * 8) + \
-        (sdsl::size_in_bytes(m_rank) * 8) + \
-        (sdsl::size_in_bytes(m_select) * 8);
-}
-
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -300,7 +283,14 @@ float Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_v
         (sdsl::size_in_bytes(m_select));
 }
 
-
+template <
+    typename T_u_vec, typename T_u_vec_rank,
+    typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
+    typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
+    >
+uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits() {
+    return u_vector_size_in_bits() + o_vector_size_in_bits() + m_vector_size_in_bits();
+}
 
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv;
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_bv_bvIL;
