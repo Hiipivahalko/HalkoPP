@@ -7,6 +7,7 @@
 #include <vector>
 
 
+
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -41,6 +42,9 @@ class Zombit {
         T_o_vec_slc o_select;
         T_m_vec_rank m_rank;
         T_m_vec_slc m_select;
+
+        size_t o_ones;
+        size_t m_ones;
 };
 
 
@@ -137,6 +141,9 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
     m_rank = T_m_vec_rank(&m_vector);
     o_select = T_o_vec_slc(&o_vector);
     m_select = T_m_vec_slc(&m_vector);
+
+    o_ones = T_m_vec_rank(&o_vector)(O_bv.size());
+    m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
 }
 
 // build zombit-vector with optimal block size sqrt(n/runs) according article
@@ -158,7 +165,8 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
     }
     if (runs_n == 0) runs_n = 1; // all 0s or 1s
     uint32_t b = (uint32_t) sqrt(X.size()/runs_n);
-    std::cerr << ">> block size: " << b << "\n";
+    if (b == 1) b++;
+    //std::cerr << ">> block size: " << b << "\n";
 
     build_zombit(X, b);
 }
@@ -185,6 +193,8 @@ uint32_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_
 
 }
 
+
+// nextGEQ qeury
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -193,43 +203,42 @@ template <
 uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(uint64_t x) {
     uint64_t j = x / block_size;
     uint64_t q = u_rank(j);
-    //std::cout << "x:" << x << " j:" << j << " q:" << q;
     // x is in uniform block of 1s
     if (u_vector[j] == 1) {
         if (o_vector[j] == 1) {
-            //std::cout << " res:" << x << " here1 x is in uniforms of 1s\n";
             return x;
         }
     } else {
         uint64_t beg_q = q * block_size;
         uint64_t delta_x = x % block_size;
-        uint64_t s = m_select( m_rank(beg_q + delta_x)+1 );
-        //std::cout << " beg_q:" << beg_q << " delta_x:" << delta_x << " s:" << s;
-        //std::cout << " m_rank:" << (m_rank(beg_q + delta_x));
-        if (s <= beg_q + block_size - 1) {
-            //std::cout << " res:" << ((j * block_size) + (s % block_size)) << "\n";
-            return (j * block_size) + (s % block_size);
+        uint64_t next_one_in_m_block = m_rank(beg_q + delta_x) + 1;
+        if (next_one_in_m_block <= m_ones) {
+            //std::cout << "m_select1 i:" << next_one_in_m_block << " m_vec:" << m_vector << "\n";
+            uint64_t s = m_select( next_one_in_m_block );
+            if (s <= beg_q + block_size - 1) {
+                return (j * block_size) + (s % block_size);
+            }
         }
     }
     // x is in fixed block or block of 0s
 
     // jump func in article
     // next 1 is in next block
-    //std::cout << " JUMP";
-    uint64_t j_p = o_select( o_rank(j+1) + 1 );
+    uint64_t next_o_block_with_ones = o_rank(j+1) + 1;
+    if (next_o_block_with_ones > o_ones) {
+        return 0; // no bigger or equal value than x
+    }
+    //std::cout << "o_select i:" << next_o_block_with_ones << "o_vec:" << o_vector << "\n";
+    uint64_t j_p = o_select( next_o_block_with_ones );
     // next block is uniform full of 1s, return first item of block
-    //std::cout << " j':" << j_p;
     if (u_vector[j_p] == 1) {
-        //std::cout << " res:" << (j_p * block_size)  << "\n";
         return j_p * block_size;
     }
     uint64_t beg_q1 = u_vector[j] ? q * block_size : (q+1) * block_size;
+    //std::cout << "m_select2 i:" << (m_rank(beg_q1) + 1) << " m_vec:" << m_vector << "\n";
     uint64_t s_p = m_select( m_rank( beg_q1 ) + 1 );
     uint64_t beg_j_p = j_p * block_size;
     uint64_t delta_s_p = s_p % block_size;
-    //std::cout << " s':" << s_p;
-    //std::cout << " m_rank:" << (m_rank(beg_q1)) << " beg_q+1:" << beg_q1 << " beg_j':" << beg_j_p << " delta_sp:" << delta_s_p;
-    //std::cout << " res:" << (beg_j_p + delta_s_p) << "\n";
     return beg_j_p + delta_s_p;
 }
 
@@ -290,4 +299,74 @@ float Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_v
         (sdsl::size_in_bytes(m_rank) * 8) + \
         (sdsl::size_in_bytes(m_select));
 }
+
+
+
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_bv_bvIL;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bv_bv_sd;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_bv_rrr;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bvIL_bv;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_bvIL_bvIL;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bv_bvIL_sd;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_bvIL_rrr;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_sd_bv;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_sd_bvIL;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bv_sd_sd;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_sd_rrr;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_rrr_bv;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_rrr_bvIL;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bv_rrr_sd;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_rrr_rrr;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bvIL_bv_bv;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bvIL_bv_bvIL;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bvIL_bv_sd;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bvIL_bv_rrr;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bvIL_bvIL_bv;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bvIL_bvIL_bvIL;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bvIL_bvIL_sd;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bvIL_bvIL_rrr;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bvIL_sd_bv;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bvIL_sd_bvIL;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bvIL_sd_sd;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bvIL_sd_rrr;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bvIL_rrr_bv;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bvIL_rrr_bvIL;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bvIL_rrr_sd;
+typedef Zombit<sdsl::bit_vector_il<>, sdsl::rank_support_il<0>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bvIL_rrr_rrr;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_sd_bv_bv;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_sd_bv_bvIL;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_sd_bv_sd;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_sd_bv_rrr;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_sd_bvIL_bv;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_sd_bvIL_bvIL;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_sd_bvIL_sd;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_sd_bvIL_rrr;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_sd_sd_bv;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_sd_sd_bvIL;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_sd_sd_sd;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_sd_sd_rrr;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_sd_rrr_bv;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_sd_rrr_bvIL;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_sd_rrr_sd;
+typedef Zombit<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_sd_rrr_rrr;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_rrr_bv_bv;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_rrr_bv_bvIL;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_rrr_bv_sd;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_rrr_bv_rrr;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_rrr_bvIL_bv;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_rrr_bvIL_bvIL;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_rrr_bvIL_sd;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_rrr_bvIL_rrr;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_rrr_sd_bv;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_rrr_sd_bvIL;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_rrr_sd_sd;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_rrr_sd_rrr;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_rrr_rrr_bv;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_rrr_rrr_bvIL;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_rrr_rrr_sd;
+typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_rrr_rrr_rrr;
+typedef Zombit<sdsl::hyb_vector<>, sdsl::hyb_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_hyb_rrr_rrr;
+
+
 #endif
