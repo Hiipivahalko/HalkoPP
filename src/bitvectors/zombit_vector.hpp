@@ -155,18 +155,7 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
 
     if (recursio_level > 0) {
         //m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
-        uint32_t prev_m = 0;
-        uint64_t m_runs = 0;
-        for (uint64_t i = 0; i < M_bv.size(); i++) {
-            if (M_bv[i] && !prev_m) {
-                m_runs++;
-                prev_m = 1;
-            } else if (!M_bv[i] && prev_m) {
-                prev_m = 0;
-            }
-        }
-        if (m_runs == 0) m_runs = 1; // all 0s or 1s
-        uint32_t m_b = (uint32_t) sqrt(M_bv.size()/m_runs);
+        uint32_t m_b = block_size / 2;
         if (m_b == 1) {
             rec_level = 0;
             m_vector = T_m_vec(M_bv);
@@ -249,18 +238,21 @@ uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_
         }
     } else {
         uint64_t beg_q = q * block_size;
-        uint64_t delta_x = x % block_size;
+        //uint64_t delta_x = x % block_size;
+        uint64_t delta_x = x & (block_size - 1);
         if (rec_level > 0) {
             uint64_t s = zombit_rec->nextGEQ(beg_q + delta_x);
             if (s <= beg_q + block_size - 1) {
-                return (j * block_size) + (s % block_size);
+                //return (j * block_size) + (s % block_size);
+                return (j * block_size) + (s & (block_size-1));
             }
         } else { // normal nextGEQ query on m
             uint64_t next_one_in_m_block = m_rank(beg_q + delta_x) + 1;
             if (next_one_in_m_block <= m_ones) {
                 uint64_t s = m_select( next_one_in_m_block );
                 if (s <= beg_q + block_size - 1) {
-                    return (j * block_size) + (s % block_size);
+                    //return (j * block_size) + (s % block_size);
+                    return (j * block_size) + (s & (block_size-1));
                 }
             }
         }
@@ -283,7 +275,8 @@ uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_
     if (rec_level > 0 ) s_p = zombit_rec->nextGEQ(beg_q1);
     else s_p = m_select( m_rank( beg_q1 ) + 1 );
     uint64_t beg_j_p = j_p * block_size;
-    uint64_t delta_s_p = s_p % block_size;
+    //uint64_t delta_s_p = s_p % block_size;
+    uint64_t delta_s_p = s_p & (block_size-1);
     return beg_j_p + delta_s_p;
 }
 

@@ -300,7 +300,7 @@ TYPED_TEST(ZombitTest, random_bv1_small) {
             sdsl::bit_vector bv(n);
             for (int j = 0; j < m; j++) bv[ones[j]] = 1;
             bv[n-1] = 1;
-            this->zom_vec.build_zombit(bv,0);
+            this->zom_vec.build_zombit(bv,0,4);
             for (int x = 0; x < n; x++) {
                 ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
             }
@@ -323,7 +323,7 @@ TYPED_TEST(ZombitTest, random_bv1_big) {
             sdsl::bit_vector bv(n);
             for (int j = 0; j < m; j++) bv[ones[j]] = 1;
             bv[n-1] = 1;
-            this->zom_vec.build_zombit(bv,0);
+            this->zom_vec.build_zombit(bv,0,128);
             for (int x = 0; x < n; x++) {
                 ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
             }
@@ -336,7 +336,7 @@ TYPED_TEST(ZombitTest, NextGEQSmall1) {
 
     sdsl::bit_vector bv = { 1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1 };
     uint32_t bv_size = bv.size();
-    std::vector<uint32_t> blocks = {2,3,4};
+    std::vector<uint32_t> blocks = {2,4,8};
     vector<int> rec = {0,1};
     for (int r = 0; r < rec.size(); r++) {
         for (uint32_t b : blocks) {

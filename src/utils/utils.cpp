@@ -41,7 +41,7 @@ void copy_n_blocks(const char *input_file, const string &output_file, const u_in
   for (u_int64_t i = 0; i < n; i++) {
     t = &v[i];
     ofs.write((char *)t, sizeof(u_int64_t));
-    cout << v[i] << endl;
+    //cout << v[i] << endl;
   }
   ofs.close();
 }
