@@ -22,10 +22,10 @@ namespace utils {
         n = ftell(fp) / sizeof(T);
         fseek(fp, 0, SEEK_SET);
 
-        std::cerr << ">> Number of integers: " << n << std::endl;
+        //std::cerr << ">> Number of integers: " << n << std::endl;
         vec_ref.resize(n);
         //uint64_t biggest_val = 0;
-        std::cerr << ">> Reading input...";
+        //std::cerr << ">> Reading input...";
         for (uint64_t i = 0; i < n; i++) {
             fread(&u, sizeof(T), 1, fp);
             vec_ref[i] = u;
@@ -35,7 +35,7 @@ namespace utils {
         //cout << "r biggest val: " << biggest_val << endl;
 
         fclose(fp);  // closing inputfile
-        std::cerr << " DONE" << std::endl;
+        //std::cerr << " DONE" << std::endl;
 
     }
 }

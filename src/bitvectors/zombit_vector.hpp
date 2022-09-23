@@ -155,7 +155,7 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
 
     if (recursio_level > 0) {
         //m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
-        uint32_t m_b = block_size / 4;
+        uint32_t m_b = block_size / 2;
         if (m_b <= 1) {
             rec_level = 0;
             m_vector = T_m_vec(M_bv);
@@ -173,7 +173,7 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
         m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
     }
 
-    o_ones = T_m_vec_rank(&o_vector)(O_bv.size());
+    o_ones = T_o_vec_rank(&o_vector)(O_bv.size());
 }
 
 // build zombit-vector with optimal block size sqrt(n/runs) according article
@@ -336,9 +336,10 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_
 }
 
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv;
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_bv_rrr;
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_bv_bvIL;
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bv_bv_sd;
-typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_bv_rrr;
+
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bvIL_bv;
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>> zombit_bv_bvIL_bvIL;
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector_il<>, sdsl::rank_support_il<1>, sdsl::select_support_il<1>,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_bv_bvIL_sd;
