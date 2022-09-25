@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     //postings_list_size = 5055078461;
 
 
-    //sdsl::store_to_file(bv, "./gov2_as_bitvector.dat");
+    //sdsl::store_to_file(bv, "/home/scratch-hdd/osiipola/gov2_as_bitvector.dat");
 
     // bloc size 10 is the article "optimal"
     std::string run_mode = argv[3];
@@ -152,11 +152,18 @@ int main(int argc, char *argv[]) {
         for (int32_t r = rec_l; r >= 0; r--) {
           zombit_bv_bv_bv zom_bv{};
           std::string label = "<bv,bv,bv>";
-          //cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
-          zom_bv.build_zombit(bv,r,b);
+          //cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...\n";
+          zom_bv.build_zombit(bv,r,b, true);
           //cerr << "building DONE\n";
           print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
           benchmark_zombit(zom_bv, label, benchmark_quesries);
+          //std::string uname = "/home/scratch-hdd/osiipola/zombit/u_vec_b" + std::to_string(block_size);
+          //std::string oname = "/home/scratch-hdd/osiipola/zombit/o_vec_b" + std::to_string(block_size);
+          //std::string mname = "/home/scratch-hdd/osiipola/zombit/m_vec_b" + std::to_string(block_size);
+          //sdsl::store_to_file(U_bv, uname);
+          //sdsl::store_to_file(O_bv, oname);
+          //sdsl::store_to_file(M_bv, mname);
+          //std::cout << "block:" << block_size << ", U,O,M vector stored\n";
         }
       }
     }
@@ -169,7 +176,7 @@ int main(int argc, char *argv[]) {
           zombit_bv_bv_rrr zom_bv{};
           std::string label = "<bv,bv,rrr>";
           //cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
-          zom_bv.build_zombit(bv,r,b);
+          zom_bv.build_zombit(bv,r,b, true);
           //cerr << "building DONE\n";
           print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
           benchmark_zombit(zom_bv, label, benchmark_quesries);
@@ -185,7 +192,7 @@ int main(int argc, char *argv[]) {
           zombit_bv_bv_sd zom_bv{};
           std::string label = "<bv,bv,sd>";
           //cerr << ">> building zombit" << label << "-" << b << " with r=" << r <<" ...";
-          zom_bv.build_zombit(bv,r,b);
+          zom_bv.build_zombit(bv,r,b, true);
           //cerr << "building DONE\n";
           print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
           benchmark_zombit(zom_bv, label, benchmark_quesries);
@@ -201,7 +208,7 @@ int main(int argc, char *argv[]) {
           zombit_bv_bv_bvIL zom_bv{};
           std::string label = "<bv,bv,bv_il>";
           //cerr << ">> building zombit" << label << "-" << b << " ...";
-          zom_bv.build_zombit(bv,r,b);
+          zom_bv.build_zombit(bv,r,b, true);
           //cerr << "building DONE\n";
           print_zombit_size_test_res(zom_bv, label, b, postings_list_size, r);
           benchmark_zombit(zom_bv, label, benchmark_quesries);

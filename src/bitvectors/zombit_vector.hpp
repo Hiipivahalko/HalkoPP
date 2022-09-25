@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sdsl/bit_vectors.hpp>
 #include <vector>
+#include <string>
 
 
 
@@ -18,11 +19,11 @@ class Zombit {
 
         Zombit();
         ~Zombit();
-        void build_zombit(sdsl::bit_vector &X, uint32_t recursio_level, uint32_t b);
-        void build_zombit(sdsl::bit_vector &X, uint32_t recursio_level);
-        uint32_t access(uint64_t i); // return value of i-th bit
-        uint64_t nextGEQ(uint64_t x); // return next greater or equal than x
-        uint64_t size(); // return lenght of the original bitvector
+        void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level);
+        void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level);
+        const uint32_t access(const uint64_t i); // return value of i-th bit
+        const uint64_t nextGEQ(const uint64_t x); // return next greater or equal than x
+        const uint64_t size(); // return lenght of the original bitvector
         const uint64_t size_in_bits();
         const uint64_t u_vector_size_in_bits();
         const uint64_t o_vector_size_in_bits();
@@ -77,7 +78,7 @@ template <
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
 void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
-        sdsl::bit_vector &X, uint32_t recursio_level, uint32_t b) {
+        sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level) {
     block_size = b;
     orig_bv_size = X.size();
     rec_level = recursio_level;
@@ -101,49 +102,61 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
     block_n = X.size() / block_size;
     sdsl::bit_vector U_bv = sdsl::bit_vector(block_n);
     sdsl::bit_vector O_bv = sdsl::bit_vector(block_n);
-    char label = 'O';
-    m_blocks = 0;
-    std::vector<uint64_t> m_block_idx;
+    sdsl::bit_vector M_bv;
+    if (top_level) {
+        std::string uname = "/home/scratch-hdd/osiipola/zombit/u_vec_b" + std::to_string(block_size);
+        std::string oname = "/home/scratch-hdd/osiipola/zombit/o_vec_b" + std::to_string(block_size);
+        std::string mname = "/home/scratch-hdd/osiipola/zombit/m_vec_b" + std::to_string(block_size);
+        sdsl::load_from_file(U_bv, uname);
+        sdsl::load_from_file(O_bv, oname);
+        sdsl::load_from_file(M_bv, mname);
+    } else {
+        char label = 'O';
+        m_blocks = 0;
+        std::vector<uint64_t> m_block_idx;
 
-    // building U and O-vector
-    for (uint64_t i = 0; i < block_n; i++) {
-        //block first val
-        if (X[i*block_size] == 0) label = 'Z';
-        else label = 'O';
-        for (uint64_t j = 1; j < block_size; j++) {
+        // building U and O-vector
+        for (uint64_t i = 0; i < block_n; i++) {
+            //block first val
+            if (X[i*block_size] == 0) label = 'Z';
+            else label = 'O';
+            for (uint64_t j = 1; j < block_size; j++) {
 
-            if (X[i * block_size + j] == 0 && label == 'Z') continue;
-            if (X[i * block_size + j] == 1 && label == 'O') continue;
-            if (X[i * block_size + j] == 0 && label == 'O') {
-                label = 'M';
-                continue;
+                if (X[i * block_size + j] == 0 && label == 'Z') continue;
+                if (X[i * block_size + j] == 1 && label == 'O') continue;
+                if (X[i * block_size + j] == 0 && label == 'O') {
+                    label = 'M';
+                    continue;
+                }
+                if (X[ (i * block_size) + j] == 1 && label == 'Z') {
+                    label = 'M';
+                    continue;
+                }
             }
-            if (X[ (i * block_size) + j] == 1 && label == 'Z') {
-                label = 'M';
-                continue;
+            // setting value for U-vector at index b_idx
+            if (label == 'Z' || label == 'O') U_bv[i] = 1; // all values 0s or 1s
+            else U_bv[i] = 0; // mix of 0s and 1s
+            // setting value for O-vector at indexx b_idx
+            if (label == 'Z') O_bv[i] = 0; // all 0s
+            else O_bv[i] = 1; // block contain atleast one 1 bit
+
+            if (label == 'M') {
+                m_blocks++;
+                m_block_idx.push_back(i);
             }
         }
-        // setting value for U-vector at index b_idx
-        if (label == 'Z' || label == 'O') U_bv[i] = 1; // all values 0s or 1s
-        else U_bv[i] = 0; // mix of 0s and 1s
-        // setting value for O-vector at indexx b_idx
-        if (label == 'Z') O_bv[i] = 0; // all 0s
-        else O_bv[i] = 1; // block contain atleast one 1 bit
-
-        if (label == 'M') {
-            m_blocks++;
-            m_block_idx.push_back(i);
+        // building M-vector
+        M_bv = sdsl::bit_vector(block_size * m_blocks);
+        uint64_t m_idx = 0;
+        for (uint64_t x : m_block_idx) {
+            for (uint64_t k = 0; k < block_size; k++) {
+                M_bv[m_idx] = X[(x * block_size) + k];
+                m_idx++;
+            }
         }
-    }
 
-    // building M-vector
-    sdsl::bit_vector M_bv = sdsl::bit_vector(block_size * m_blocks);
-    uint64_t m_idx = 0;
-    for (uint64_t x : m_block_idx) {
-        for (uint64_t k = 0; k < block_size; k++) {
-            M_bv[m_idx] = X[(x * block_size) + k];
-            m_idx++;
-        }
+        m_block_idx.clear();
+        m_block_idx.shrink_to_fit();
     }
 
     u_vector = T_u_vec(U_bv);
@@ -153,20 +166,16 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
     o_rank = T_o_vec_rank(&o_vector);
     o_select = T_o_vec_slc(&o_vector);
 
-    if (recursio_level > 0) {
-        //m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
-        uint32_t m_b = block_size / 2;
+    if (rec_level > 0) {
+        uint32_t m_b = block_size / 4;
         if (m_b <= 1) {
             rec_level = 0;
-            m_vector = T_m_vec(M_bv);
-            m_rank = T_m_vec_rank(&m_vector);
-            m_select = T_m_vec_slc(&m_vector);
-            m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
         } else {
             zombit_rec = new Zombit<T_u_vec, T_u_vec_rank, T_o_vec, T_o_vec_rank, T_o_vec_slc, T_m_vec, T_m_vec_rank, T_m_vec_slc>();
-            zombit_rec->build_zombit(M_bv, rec_level-1, m_b);
+            zombit_rec->build_zombit(M_bv, rec_level-1, m_b, false);
         }
-    } else {
+    }
+    if (rec_level == 0) {
         m_vector = T_m_vec(M_bv);
         m_rank = T_m_vec_rank(&m_vector);
         m_select = T_m_vec_slc(&m_vector);
@@ -183,7 +192,7 @@ template <
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
 void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
-        sdsl::bit_vector &X, uint32_t recursio_level) {
+        sdsl::bit_vector &X, const uint32_t recursio_level) {
     uint32_t prev = 0;
     rec_level = recursio_level;
     runs_n = 0;
@@ -209,7 +218,7 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-uint32_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::access(uint64_t i) {
+const uint32_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::access(const uint64_t i) {
     uint64_t j = i / block_size;
     if (u_vector[j] == 1) {
         if (o_vector[j] == 1) return 1;
@@ -228,7 +237,7 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(uint64_t x) {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(const uint64_t x) {
     uint64_t j = x / block_size;
     uint64_t q = u_rank(j);
     // x is in uniform block of 1s
@@ -285,7 +294,7 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size() {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size() {
     return orig_bv_size;
 }
 
