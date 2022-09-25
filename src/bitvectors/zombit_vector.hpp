@@ -8,7 +8,6 @@
 #include <string>
 
 
-
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -19,8 +18,9 @@ class Zombit {
 
         Zombit();
         ~Zombit();
-        void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level);
+        void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b);
         void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level);
+        void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level, const std::string vec_path, const std::string m);
         const uint32_t access(const uint64_t i); // return value of i-th bit
         const uint64_t nextGEQ(const uint64_t x); // return next greater or equal than x
         const uint64_t size(); // return lenght of the original bitvector
@@ -35,6 +35,7 @@ class Zombit {
         uint64_t m_blocks = 0;
         uint64_t block_n = 0;
         uint32_t rec_level = 0;
+        std::string b_model = "";
 
         T_u_vec u_vector;
         T_o_vec o_vector;
@@ -49,8 +50,64 @@ class Zombit {
 
         size_t o_ones;
         size_t m_ones;
+
+        const uint32_t block_model(const sdsl::bit_vector &M);
 };
 
+template <
+    typename T_u_vec, typename T_u_vec_rank,
+    typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
+    typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
+    >
+const uint32_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::block_model(const sdsl::bit_vector &M) {
+    if (b_model == "div2") return block_size/2;
+    if (b_model == "div4") return block_size/4;
+    if (b_model == "div8") return block_size/8;
+    if (b_model == "avg_rle") {
+        std::vector<uint32_t> r0,r1;
+        uint32_t prev = M[0];
+        uint32_t r_length = 1;
+        for (uint64_t i = 1; i < M.size(); i++) {
+            if (prev == M[i]) r_length++;
+            else {
+                if (prev == 0) r0.push_back(r_length);
+                else r1.push_back(r_length);
+                r_length = 1;
+            }
+            prev = M[i];
+        }
+        uint64_t r0_sum = 0;
+        uint64_t r1_sum = 0;
+        for (uint64_t i = 0; i < r0.size(); i++) r0_sum += r0[i];
+        for (uint64_t i = 0; i < r1.size(); i++) r1_sum += r1[i];
+        uint32_t r0_avg = r0_sum / r0.size();
+        uint32_t r1_avg = r1_sum / r1.size();
+        return r0_avg > r1_avg ? r1_avg : r0_avg;
+    }
+    if (b_model == "med_rle") {
+        std::vector<uint32_t> r0,r1;
+        uint32_t prev = M[0];
+        uint32_t r_length = 1;
+        for (uint64_t i = 1; i < M.size(); i++) {
+            if (prev == M[i]) r_length++;
+            else {
+                if (prev == 0) r0.push_back(r_length);
+                else r1.push_back(r_length);
+                r_length = 1;
+            }
+            prev = M[i];
+        }
+        if (prev == 0) r0.push_back(r_length);
+        else r1.push_back(r_length);
+
+        std::sort(r0.begin(), r0.end());
+        std::sort(r1.begin(), r1.end());
+        uint32_t r0_med = (r0.size()/2) < r0.size() ? r0[r0.size()/2] : r0[(r0.size()/2)-1];
+        uint32_t r1_med = (r1.size()/2) < r1.size() ? r1[r1.size()/2] : r1[(r1.size()/2)-1];
+        return r0_med > r1_med ? r1_med : r0_med;
+    }
+    return 1;
+}
 
 template <
     typename T_u_vec, typename T_u_vec_rank,
@@ -78,7 +135,7 @@ template <
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
 void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
-        sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level) {
+        sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b ) {
     block_size = b;
     orig_bv_size = X.size();
     rec_level = recursio_level;
@@ -103,14 +160,135 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
     sdsl::bit_vector U_bv = sdsl::bit_vector(block_n);
     sdsl::bit_vector O_bv = sdsl::bit_vector(block_n);
     sdsl::bit_vector M_bv;
+    char label = 'O';
+    m_blocks = 0;
+    std::vector<uint64_t> m_block_idx;
+
+    // building U and O-vector
+    for (uint64_t i = 0; i < block_n; i++) {
+        //block first val
+        if (X[i*block_size] == 0) label = 'Z';
+        else label = 'O';
+        for (uint64_t j = 1; j < block_size; j++) {
+
+            if (X[i * block_size + j] == 0 && label == 'Z') continue;
+            if (X[i * block_size + j] == 1 && label == 'O') continue;
+            if (X[i * block_size + j] == 0 && label == 'O') {
+                label = 'M';
+                continue;
+            }
+            if (X[ (i * block_size) + j] == 1 && label == 'Z') {
+                label = 'M';
+                continue;
+            }
+        }
+        // setting value for U-vector at index b_idx
+        if (label == 'Z' || label == 'O') U_bv[i] = 1; // all values 0s or 1s
+        else U_bv[i] = 0; // mix of 0s and 1s
+        // setting value for O-vector at indexx b_idx
+        if (label == 'Z') O_bv[i] = 0; // all 0s
+        else O_bv[i] = 1; // block contain atleast one 1 bit
+
+        if (label == 'M') {
+            m_blocks++;
+            m_block_idx.push_back(i);
+        }
+    }
+    // building M-vector
+    M_bv = sdsl::bit_vector(block_size * m_blocks);
+    uint64_t m_idx = 0;
+    for (uint64_t x : m_block_idx) {
+        for (uint64_t k = 0; k < block_size; k++) {
+            M_bv[m_idx] = X[(x * block_size) + k];
+            m_idx++;
+        }
+    }
+
+    m_block_idx.clear();
+    m_block_idx.shrink_to_fit();
+
+    // constructing U and O-vector and it's rank/select support
+    u_vector = T_u_vec(U_bv);
+    o_vector = T_o_vec(O_bv);
+    u_rank = T_u_vec_rank(&u_vector);
+    o_rank = T_o_vec_rank(&o_vector);
+    o_select = T_o_vec_slc(&o_vector);
+
+    if (rec_level > 0) {
+        uint32_t m_b = block_size / 4;
+        if (m_b <= 1) {
+            rec_level = 0;
+            rec_level = false;
+        } else {
+            zombit_rec = new Zombit<T_u_vec, T_u_vec_rank, T_o_vec, T_o_vec_rank, T_o_vec_slc, T_m_vec, T_m_vec_rank, T_m_vec_slc>();
+            zombit_rec->build_zombit(M_bv, rec_level-1, m_b);
+        }
+    }
+    if (rec_level == 0) {
+        m_vector = T_m_vec(M_bv);
+        m_rank = T_m_vec_rank(&m_vector);
+        m_select = T_m_vec_slc(&m_vector);
+        m_ones = T_m_vec_rank(&m_vector)(M_bv.size());
+    }
+
+    o_ones = T_o_vec_rank(&o_vector)(O_bv.size());
+}
+
+/////////////////////////////////// for testing not pord
+/*
+ * Note if |X| mod block_size != 0, bitvector X is modified to zero's are added end of X, such that
+ * |X| mod block_size = 0 is valid.
+ */
+template <
+    typename T_u_vec, typename T_u_vec_rank,
+    typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
+    typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
+    >
+void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
+        sdsl::bit_vector &X,
+        const uint32_t recursio_level,
+        const uint32_t b,
+        const bool top_level,
+        const std::string vec_path,
+        const std::string m) {
+
+    block_size = b;
+    orig_bv_size = X.size();
+    rec_level = recursio_level;
+    b_model = m;
+    //if (runs_n == 0) {
+    //    uint32_t prev = 0;
+    //    for (uint64_t i = 0; i < X.size(); i++) {
+    //        if (X[i] && !prev) {
+    //            runs_n++;
+    //            prev = 1;
+    //        } else if (!X[i] && prev) {
+    //            prev = 0;
+    //        }
+    //    }
+    //}
+    sdsl::bit_vector U_bv;
+    sdsl::bit_vector O_bv;
+    sdsl::bit_vector M_bv;
     if (top_level) {
-        std::string uname = "/home/scratch-hdd/osiipola/zombit/u_vec_b" + std::to_string(block_size);
-        std::string oname = "/home/scratch-hdd/osiipola/zombit/o_vec_b" + std::to_string(block_size);
-        std::string mname = "/home/scratch-hdd/osiipola/zombit/m_vec_b" + std::to_string(block_size);
+        std::string uname = vec_path + "_u_vec_b" + std::to_string(block_size) + ".dat";
+        std::string oname = vec_path + "_o_vec_b" + std::to_string(block_size) + ".dat";
+        std::string mname = vec_path + "_m_vec_b" + std::to_string(block_size) + ".dat";
         sdsl::load_from_file(U_bv, uname);
         sdsl::load_from_file(O_bv, oname);
         sdsl::load_from_file(M_bv, mname);
+        block_n = U_bv.size();
+        orig_bv_size = U_bv.size() * block_size;
     } else {
+        // adding 0s end of X, so that all blocks have same length.
+        if (X.size() % block_size != 0) {
+            //std::cerr << ">> resizing X..";
+            X.resize(X.size() + (block_size - (X.size() % block_size)));
+            //std::cerr << "Done\n";
+        }
+        block_n = X.size() / block_size;
+        U_bv = sdsl::bit_vector(block_n);
+        O_bv = sdsl::bit_vector(block_n);
         char label = 'O';
         m_blocks = 0;
         std::vector<uint64_t> m_block_idx;
@@ -167,12 +345,13 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
     o_select = T_o_vec_slc(&o_vector);
 
     if (rec_level > 0) {
-        uint32_t m_b = block_size / 4;
+        uint32_t m_b = block_model(M_bv);
         if (m_b <= 1) {
             rec_level = 0;
+            rec_level = false;
         } else {
             zombit_rec = new Zombit<T_u_vec, T_u_vec_rank, T_o_vec, T_o_vec_rank, T_o_vec_slc, T_m_vec, T_m_vec_rank, T_m_vec_slc>();
-            zombit_rec->build_zombit(M_bv, rec_level-1, m_b, false);
+            zombit_rec->build_zombit(M_bv, rec_level-1, m_b, false, "",  b_model);
         }
     }
     if (rec_level == 0) {
@@ -343,6 +522,8 @@ template <
 const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits() {
     return u_vector_size_in_bits() + o_vector_size_in_bits() + m_vector_size_in_bits();
 }
+
+
 
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv;
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_bv_bv_rrr;
