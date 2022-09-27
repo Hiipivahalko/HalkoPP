@@ -53,11 +53,24 @@ void test_zombit(T &zombit,
     const vector<uint64_t> &r) {
 
   int32_t max_rec_depth = (int32_t) log2(b);
-  //cout << "max_rec_dpeth: " << max_rec_depth << "\n";
   float prev_bpp = 1000000.0;
   for (int32_t rec_level = 0; rec_level < max_rec_depth; rec_level++) {
-    //cout << g_vec_path << " " << g_block_model << " " << g_postings_list_size << "\n";
     zombit.build_zombit(g_bv,rec_level, b, true, g_vec_path, g_block_model);
+
+    chrono::duration<double, std::micro> ms_double;
+    double time_avg = 0;
+    double time_avg_total = 0;
+    for (uint32_t j = 0; j < 3; j++) {
+      time_avg = 0;
+      for (uint64_t i = 0; i < r.size(); i++) {
+        auto t1 = chrono::high_resolution_clock::now();
+        zombit.nextGEQ(r[i]);
+        auto t2 = chrono::high_resolution_clock::now();
+        ms_double = t2 - t1;
+        time_avg += ms_double.count();
+      }
+      time_avg_total += (time_avg / r.size());
+    }
 
     float bpp = (float) zombit.size_in_bits() / g_postings_list_size;
     cout << label << ";" << b << ";" << bpp;
@@ -69,21 +82,7 @@ void test_zombit(T &zombit,
     cout << ";" << ((float)zombit.m_vector_size_in_bits() / zombit.size_in_bits());
     cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << ";" << rec_level;
 
-    chrono::duration<double, std::micro> ms_double;
-    double time_avg = 0;
-    double time_avg_total = 0;
-    for (uint32_t j = 0; j < 100; j++) {
-      time_avg = 0;
-      for (uint64_t i = 0; i < r.size(); i++) {
-        auto t1 = chrono::high_resolution_clock::now();
-        zombit.nextGEQ(r[i]);
-        auto t2 = chrono::high_resolution_clock::now();
-        ms_double = t2 - t1;
-        time_avg += ms_double.count();
-      }
-      time_avg_total += (time_avg / r.size());
-    }
-    std::cout << ";" << (time_avg_total/100) << "\n";
+    std::cout << ";" << (time_avg_total/3) << "\n";
     //std::string uname = "./data/zombit/small_u_vec_b" + std::to_string(b) + ".dat";
     //std::string oname = "./data/zombit/small_o_vec_b" + std::to_string(b) + ".dat";
     //std::string mname = "./data/zombit/small_m_vec_b" + std::to_string(b) + ".dat";
@@ -91,7 +90,8 @@ void test_zombit(T &zombit,
     //sdsl::store_to_file(zombit.o_vector, oname);
     //sdsl::store_to_file(zombit.m_vector, mname);
     //std::cout << "block:" << b << ", U,O,M vector stored\n";
-    if (prev_bpp <= bpp) break;
+    if (prev_bpp == bpp) break;
+    prev_bpp = bpp;
   }
 }
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     for (uint32_t i = 0; i < n; i++) benchmark_quesries[i] = rand() % u + 1;
     g_bv = sdsl::bit_vector(0);
 
-    //cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s;recursio level;nextGEQ avg (μs)\n";
+    cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s;recursio level;nextGEQ avg (μs)\n";
 
     ////////////////////////
     //
@@ -180,19 +180,18 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    //  bv,bv,sd
     if (run_mode[2] == '1') {
       for (uint32_t b : block_sizes ) {
-        zombit_bv_bv_sd zombit{};
-        test_zombit(zombit, b, "<bv,bv,sd>", benchmark_quesries);
+        zombit_hyb_rrr_rrr zombit{};
+        test_zombit(zombit, b, "<hyb,rrr,rrr>", benchmark_quesries);
       }
     }
 
-    // bv, bv, bit_vector_il
+    //  bv,bv,sd
     if (run_mode[3] == '1') {
       for (uint32_t b : block_sizes ) {
-        zombit_bv_bv_bvIL zombit{};
-        test_zombit(zombit, b, "<bv,bv,bvIL>", benchmark_quesries);
+        zombit_bv_bv_sd zombit{};
+        test_zombit(zombit, b, "<bv,bv,sd>", benchmark_quesries);
       }
     }
 

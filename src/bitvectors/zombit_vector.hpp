@@ -40,7 +40,9 @@ class Zombit {
         T_u_vec u_vector;
         T_o_vec o_vector;
         T_m_vec m_vector;
-        Zombit<T_u_vec, T_u_vec_rank, T_o_vec, T_o_vec_rank, T_o_vec_slc, T_m_vec, T_m_vec_rank, T_m_vec_slc>* zombit_rec;
+        Zombit<T_u_vec, T_u_vec_rank,\
+            T_o_vec, T_o_vec_rank, T_o_vec_slc,\
+            T_m_vec, T_m_vec_rank, T_m_vec_slc>* zombit_rec;
 
         T_u_vec_rank u_rank;
         T_o_vec_rank o_rank;
@@ -59,7 +61,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint32_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::block_model(const sdsl::bit_vector &M) {
+const uint32_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::block_model(const sdsl::bit_vector &M) {
     if (b_model == "div2") return block_size/2;
     if (b_model == "div4") return block_size/4;
     if (b_model == "div8") return block_size/8;
@@ -114,16 +118,21 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::Zombit() {};
+Zombit<T_u_vec,T_u_vec_rank,
+    T_o_vec,T_o_vec_rank,T_o_vec_slc,
+    T_m_vec,T_m_vec_rank,T_m_vec_slc>::Zombit() {};
 
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::~Zombit() {
+Zombit<T_u_vec,T_u_vec_rank,
+    T_o_vec,T_o_vec_rank,T_o_vec_slc,
+    T_m_vec,T_m_vec_rank,T_m_vec_slc>::~Zombit() {
+    ~zombit_rec();
     if (rec_level > 0) delete zombit_rec;
-};
+}
 
 /*
  * Note if |X| mod block_size != 0, bitvector X is modified to zero's are added end of X, such that
@@ -134,7 +143,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
+void Zombit<T_u_vec,T_u_vec_rank,
+     T_o_vec,T_o_vec_rank,T_o_vec_slc,
+     T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
         sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b ) {
     block_size = b;
     orig_bv_size = X.size();
@@ -220,7 +231,9 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
             rec_level = 0;
             rec_level = false;
         } else {
-            zombit_rec = new Zombit<T_u_vec, T_u_vec_rank, T_o_vec, T_o_vec_rank, T_o_vec_slc, T_m_vec, T_m_vec_rank, T_m_vec_slc>();
+            zombit_rec = new Zombit<T_u_vec, T_u_vec_rank,\
+                         T_o_vec, T_o_vec_rank, T_o_vec_slc,\
+                         T_m_vec, T_m_vec_rank, T_m_vec_slc>();
             zombit_rec->build_zombit(M_bv, rec_level-1, m_b);
         }
     }
@@ -244,7 +257,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
+void Zombit<T_u_vec,T_u_vec_rank,
+     T_o_vec,T_o_vec_rank,T_o_vec_slc,
+     T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
         sdsl::bit_vector &X,
         const uint32_t recursio_level,
         const uint32_t b,
@@ -348,9 +363,10 @@ void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_ve
         uint32_t m_b = block_model(M_bv);
         if (m_b <= 1) {
             rec_level = 0;
-            rec_level = false;
         } else {
-            zombit_rec = new Zombit<T_u_vec, T_u_vec_rank, T_o_vec, T_o_vec_rank, T_o_vec_slc, T_m_vec, T_m_vec_rank, T_m_vec_slc>();
+            zombit_rec = new Zombit<T_u_vec, T_u_vec_rank,\
+                         T_o_vec, T_o_vec_rank, T_o_vec_slc,\
+                         T_m_vec, T_m_vec_rank, T_m_vec_slc>();
             zombit_rec->build_zombit(M_bv, rec_level-1, m_b, false, "",  b_model);
         }
     }
@@ -370,7 +386,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-void Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
+void Zombit<T_u_vec,T_u_vec_rank,
+     T_o_vec,T_o_vec_rank,T_o_vec_slc,
+     T_m_vec,T_m_vec_rank,T_m_vec_slc>::build_zombit(
         sdsl::bit_vector &X, const uint32_t recursio_level) {
     uint32_t prev = 0;
     rec_level = recursio_level;
@@ -397,7 +415,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint32_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::access(const uint64_t i) {
+const uint32_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::access(const uint64_t i) {
     uint64_t j = i / block_size;
     if (u_vector[j] == 1) {
         if (o_vector[j] == 1) return 1;
@@ -416,7 +436,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(const uint64_t x) {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(const uint64_t x) {
     uint64_t j = x / block_size;
     uint64_t q = u_rank(j);
     // x is in uniform block of 1s
@@ -449,11 +471,11 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_
 
     // jump func in article
     // next 1 is in next block
-    uint64_t next_o_block_with_ones = o_rank(j+1) + 1;
-    if (next_o_block_with_ones > o_ones) {
+    uint64_t next_block_with_ones = o_rank(j+1) + 1;
+    if (next_block_with_ones > o_ones) {
         return 0; // no bigger or equal value than x
     }
-    uint64_t j_p = o_select( next_o_block_with_ones );
+    uint64_t j_p = o_select( next_block_with_ones );
     // next block is uniform full of 1s, return first item of block
     if (u_vector[j_p] == 1) {
         return j_p * block_size;
@@ -473,7 +495,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size() {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::size() {
     return orig_bv_size;
 }
 
@@ -482,7 +506,10 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::u_vector_size_in_bits() {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::u_vector_size_in_bits() {
+
     uint64_t this_level_size = (sdsl::size_in_bytes(u_vector) * 8) + \
         (sdsl::size_in_bytes(u_rank) * 8);
     if (rec_level > 0) return this_level_size + zombit_rec->u_vector_size_in_bits();
@@ -494,7 +521,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::o_vector_size_in_bits() {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::o_vector_size_in_bits() {
     uint64_t this_level_size = (sdsl::size_in_bytes(o_vector) * 8) + \
         (sdsl::size_in_bytes(o_rank) * 8) + \
         (sdsl::size_in_bytes(o_select) * 8);
@@ -507,7 +536,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::m_vector_size_in_bits() {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::m_vector_size_in_bits() {
     if (rec_level > 0) return zombit_rec->m_vector_size_in_bits();
     return (sdsl::size_in_bytes(m_vector) * 8) + \
         (sdsl::size_in_bytes(m_rank) * 8) + \
@@ -519,7 +550,9 @@ template <
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
     typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
     >
-const uint64_t Zombit<T_u_vec,T_u_vec_rank,T_o_vec,T_o_vec_rank,T_o_vec_slc,T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits() {
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits() {
     return u_vector_size_in_bits() + o_vector_size_in_bits() + m_vector_size_in_bits();
 }
 
