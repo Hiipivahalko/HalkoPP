@@ -10,7 +10,7 @@
 using namespace std;
 
 
-TEST(saveSDSLObject, saveBitvector) {
+TEST(sdslTEST, saveBitvector) {
     sdsl::bit_vector bv = {1,0,1,0,1,0};
     string filename = "./test_sdsl_bv.dat";
     sdsl::store_to_file(bv, filename);
@@ -21,7 +21,7 @@ TEST(saveSDSLObject, saveBitvector) {
     for (int i = 0; i < bv.size(); i++) ASSERT_EQ(bv[i], bv_load[i]);
 }
 
-TEST(selectTEST, select_over_m) {
+TEST(sdslTEST, select_over_m) {
     //sdsl::bit_vector bv = {0,0,1,1, 0,1, 0,0,0, 0};
     sdsl::bit_vector bv = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,0,1};
     sdsl::select_support_mcl<1> s(&bv);
@@ -32,4 +32,15 @@ TEST(selectTEST, select_over_m) {
     //cout << s.select(43) << endl;
     //cout << s.select(44) << endl;
     //cout << s.select(45) << endl;
+}
+
+TEST(sdslTEST, clz_test) {
+    sdsl::bit_vector bv(64);
+
+    //bv[0] = 1;
+    bv[63] = 1;
+    for (int i = 0; i < 64; i++) {
+        int z = __builtin_ctzll(bv.data()[0]);
+        //std::cout << z << "\n";
+    }
 }

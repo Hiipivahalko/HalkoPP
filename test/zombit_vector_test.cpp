@@ -129,9 +129,9 @@ uint64_t scan_nextGEQ(sdsl::bit_vector &bv, uint64_t x) {
     return res;
 }
 
-//using TestTypes = ::testing::Types< zombit_bv_bv_bv_test >;
+using TestTypes = ::testing::Types< zombit_bv_bv_bv_test >;
 //using TestTypes = ::testing::Types< zombit_bvIL_bvIL_bvIL_test >;
-using TestTypes = ::testing::Types< zombit_bv_bv_bv_test,zombit_bvIL_bvIL_bvIL_test,zombit_sd_sd_sd_test,zombit_rrr_rrr_rrr_test >;
+//using TestTypes = ::testing::Types< zombit_bv_bv_bv_test,zombit_bvIL_bvIL_bvIL_test,zombit_sd_sd_sd_test,zombit_rrr_rrr_rrr_test >;
 TYPED_TEST_CASE(ZombitTest, TestTypes);
 
 TYPED_TEST(ZombitTest, zombitArticleValues) {
@@ -284,7 +284,7 @@ TYPED_TEST(ZombitTest, access_random_bv1_small) {
     }
 }
 
-// NextGEQ tests
+//// # NextGEQ tests
 TYPED_TEST(ZombitTest, random_bv1_small) {
     int rounds = 10000;
     srand(1);
@@ -347,6 +347,36 @@ TYPED_TEST(ZombitTest, NextGEQSmall1) {
           for (uint32_t x = 0; x < bv_size; x++) {
             ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv_temp, x));
           }
+        }
+    }
+}
+
+
+TEST(ScanSucc, NextGEQSmallResInNextWordBlock) {
+    sdsl::bit_vector bv(2*64);
+
+    bv[64 + 10] = 1;
+    bv[64 + 11] = 1;
+    bv[64 + 33] = 1;
+    bv[64 + 46] = 1;
+    bv[64 + 47] = 1;
+    bv[64 + 48] = 1;
+    bv[64 + 60] = 1;
+    bv[64 + 62] = 1;
+
+    uint32_t bv_size = bv.size();
+    for (int i = 0; i < 2*64; i++) {
+        ASSERT_EQ(succ_scan(bv, i), scan_nextGEQ(bv, i));
+    }
+}
+
+TEST(ScanSucc, NextGEQSmallResInNextWordBlock2) {
+    for (int j = 0; j < 2*64; j++) {
+        sdsl::bit_vector bv(2*64);
+
+        bv[j] = 1;
+        for (int i = 0; i < 2*64; i++) {
+            ASSERT_EQ(succ_scan(bv, i), scan_nextGEQ(bv, i));
         }
     }
 }

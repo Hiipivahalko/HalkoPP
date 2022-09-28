@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
     //utils::copy_n_blocks(argv[1], output_file, n);
 
     string curr_time = utils::current_time2str();
+    cerr << ">> Program START time: " << curr_time << endl;
     string mode = argv[2];
     uint64_t postings_list_size = 0;
     if (mode == "raw") {
@@ -196,7 +197,7 @@ int main(int argc, char *argv[]) {
     }
 
     curr_time = utils::current_time2str();
-    //cerr << ">> Program END time: " << curr_time << endl;
+    cerr << ">> Program END time: " << curr_time << endl;
 
   	return 0;
 }

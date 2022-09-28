@@ -22,7 +22,7 @@ class Zombit {
         void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level);
         void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level, const std::string vec_path, const std::string m);
         const uint32_t access(const uint64_t i); // return value of i-th bit
-        const uint64_t nextGEQ(const uint64_t x); // return next greater or equal than x
+        const uint64_t nextGEQ(const uint64_t x) const; // return next greater or equal than x
         const uint64_t size(); // return lenght of the original bitvector
         const uint64_t size_in_bits();
         const uint64_t u_vector_size_in_bits();
@@ -130,7 +130,6 @@ template <
 Zombit<T_u_vec,T_u_vec_rank,
     T_o_vec,T_o_vec_rank,T_o_vec_slc,
     T_m_vec,T_m_vec_rank,T_m_vec_slc>::~Zombit() {
-    ~zombit_rec();
     if (rec_level > 0) delete zombit_rec;
 }
 
@@ -430,6 +429,29 @@ const uint32_t Zombit<T_u_vec,T_u_vec_rank,
 }
 
 
+/*
+ * Idea to scan next 1bit from x.
+ * Why this would be good solution is that if bv is random or have more 1s than 0s,
+ * the next 1bit is usually in same word as x or its in the next word.
+ */
+inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const uint64_t x) {
+    int next_one_bit = 0;
+    uint64_t x_w_idx = x/64;
+    uint64_t curr_w_bv = bv.data()[x_w_idx] >> (x % 64);
+    if (curr_w_bv > 0) return x + __builtin_ctzll(curr_w_bv); // next 1bit is in the same word block
+    else { // next possible 1bit is in some of the next word blocks
+        uint64_t bv_words = (uint64_t) ceil((bv.size()/64.0));//; + 1;
+        for (uint64_t i = 1; i <= ( bv_words - x_w_idx - 1 ); i++) {
+            if (bv.data()[i + (x/64)] > 0) {
+                return  __builtin_ctzll(
+                            bv.data()[ i + x_w_idx ]
+                        ) + ((i)*64);
+            }
+        }
+        return 0; // there is not equeal or bigger val in bv
+    }
+}
+
 // nextGEQ qeury
 template <
     typename T_u_vec, typename T_u_vec_rank,
@@ -438,7 +460,7 @@ template <
     >
 const uint64_t Zombit<T_u_vec,T_u_vec_rank,
       T_o_vec,T_o_vec_rank,T_o_vec_slc,
-      T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(const uint64_t x) {
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ(const uint64_t x) const {
     uint64_t j = x / block_size;
     uint64_t q = u_rank(j);
     // x is in uniform block of 1s
@@ -471,11 +493,19 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
 
     // jump func in article
     // next 1 is in next block
+    //
+    //////////// NORMAL SUCC with rank and select
     uint64_t next_block_with_ones = o_rank(j+1) + 1;
     if (next_block_with_ones > o_ones) {
         return 0; // no bigger or equal value than x
     }
     uint64_t j_p = o_select( next_block_with_ones );
+
+    ///////// SUCC with scan;
+    //uint64_t j_p = succ_scan(o_vector, j+1);
+
+
+
     // next block is uniform full of 1s, return first item of block
     if (u_vector[j_p] == 1) {
         return j_p * block_size;
