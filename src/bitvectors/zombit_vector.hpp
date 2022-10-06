@@ -162,9 +162,7 @@ void Zombit<T_u_vec,T_u_vec_rank,
     }
     // adding 0s end of X, so that all blocks have same length.
     if (X.size() % block_size != 0) {
-        //std::cerr << ">> resizing X..";
         X.resize(X.size() + (block_size - (X.size() % block_size)));
-        //std::cerr << "Done\n";
     }
     block_n = X.size() / block_size;
     sdsl::bit_vector U_bv = sdsl::bit_vector(block_n);
@@ -296,9 +294,7 @@ void Zombit<T_u_vec,T_u_vec_rank,
     } else {
         // adding 0s end of X, so that all blocks have same length.
         if (X.size() % block_size != 0) {
-            //std::cerr << ">> resizing X..";
             X.resize(X.size() + (block_size - (X.size() % block_size)));
-            //std::cerr << "Done\n";
         }
         block_n = X.size() / block_size;
         U_bv = sdsl::bit_vector(block_n);
@@ -403,7 +399,6 @@ void Zombit<T_u_vec,T_u_vec_rank,
     if (runs_n == 0) runs_n = 1; // all 0s or 1s
     uint32_t b = (uint32_t) sqrt(X.size()/runs_n);
     //if (b == 1) b++;
-    //std::cerr << ">> block size: " << b << "\n";
 
     build_zombit(X, recursio_level, b);
 }
@@ -434,22 +429,31 @@ const uint32_t Zombit<T_u_vec,T_u_vec_rank,
  * Why this would be good solution is that if bv is random or have more 1s than 0s,
  * the next 1bit is usually in same word as x or its in the next word.
  */
-inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const uint64_t x) {
+inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const sdsl::rank_support_v5<1> &rank_bv, const uint64_t x, const size_t n_ones) {
     int next_one_bit = 0;
     uint64_t x_w_idx = x/64;
-    uint64_t curr_w_bv = bv.data()[x_w_idx] >> (x % 64);
+    //std::cout << rank_bv(x) << "\n";
+    //if (rank_bv(x) == n_ones && bv[x] == 0) {
+    //    return 0;
+    //}
+    uint64_t curr_w_bv = bv.data()[x_w_idx] >> ( x & (64-1) );
+    //std::cerr << "---\n";
+    //std::cerr << "x: " << x << ", x_w_idx: " << x_w_idx << ", curr_w_bv: " << curr_w_bv << ", x%64: " << ( 64 - (x & 63) - 1) << "\n";
     if (curr_w_bv > 0) return x + __builtin_ctzll(curr_w_bv); // next 1bit is in the same word block
-    else { // next possible 1bit is in some of the next word blocks
-        uint64_t bv_words = (uint64_t) ceil((bv.size()/64.0));//; + 1;
-        for (uint64_t i = 1; i <= ( bv_words - x_w_idx - 1 ); i++) {
-            if (bv.data()[i + (x/64)] > 0) {
-                return  __builtin_ctzll(
-                            bv.data()[ i + x_w_idx ]
-                        ) + ((i)*64);
-            }
+    // next possible 1bit is in some of the next word blocks
+    uint64_t bv_words = (uint64_t) ceil((bv.size()/64.0));//; + 1;
+    //std::cerr << "bv_words: " << bv_words << "\n";
+    for (uint64_t i = 1; i <= ( bv_words - x_w_idx - 1 ); i++) {
+        //std::cerr << bv.data()[i+(x/64)] << "\n";
+        if (bv.data()[i + (x/64)] > 0) {
+            //std::cerr << "ctz:" << __builtin_ctzll(bv.data()[i+x_w_idx]) << ", i*64: " << ((i-1)*64) << "\n";
+            return  __builtin_ctzll(
+                        bv.data()[ i + x_w_idx ]
+                    ) + ((i-1)*64) + x + 1 + ( 64 - (x & 63) - 1);
         }
-        return 0; // there is not equeal or bigger val in bv
     }
+    return 0; // there is not equeal or bigger val in bv
+
 }
 
 // nextGEQ qeury
@@ -495,14 +499,16 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     // next 1 is in next block
     //
     //////////// NORMAL SUCC with rank and select
-    uint64_t next_block_with_ones = o_rank(j+1) + 1;
-    if (next_block_with_ones > o_ones) {
-        return 0; // no bigger or equal value than x
-    }
-    uint64_t j_p = o_select( next_block_with_ones );
+    //uint64_t next_block_with_ones = o_rank(j+1) + 1;
+    //if (next_block_with_ones > o_ones) {
+    //    return 0; // no bigger or equal value than x
+    //}
+    //uint64_t j_p = o_select( next_block_with_ones );
 
     ///////// SUCC with scan;
-    //uint64_t j_p = succ_scan(o_vector, j+1);
+    //std::cerr << "here1\n";
+    uint64_t j_p = succ_scan(o_vector, o_rank, j+1, o_ones);
+    //std::cerr << "here2\n";
 
 
 

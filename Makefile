@@ -7,6 +7,7 @@ CXX := g++
 SDSL_INCLUDE := ./external/cpp_libs/include
 SDSL_LIB := ./external/cpp_libs/lib
 LIBS := -I${SDSL_INCLUDE} -L${SDSL_LIB}
+# LIBS := -I${SDSL_INCLUDE} -L${SDSL_LIB} -I./external/PEF
 
 # Find all C++ files we want to compile
 # SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' ! -name 'main.cpp')

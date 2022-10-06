@@ -8,6 +8,8 @@
 #include "bitvectors/zombit_vector.hpp"
 #include <sdsl/bit_vectors.hpp>
 #include <iomanip>
+//#include "./external/PEF/pef_vector_opt.hpp"
+//#include <pef_vector_opt.hpp>
 
 using namespace std;
 
@@ -19,7 +21,7 @@ sdsl::bit_vector g_bv;
 
 // creating new vector v from w -> v[i] = w[i] - w[i-1]
 void create_diff_vector(const vector<uint64_t> &seq_ref2, vector<uint64_t> &seq_diff_ref, uint64_t &sumOrig_r) {
-    //cerr << ">> Creating difference vector...";
+    std::cerr << ">> Creating difference vector...";
     for (uint64_t i = 1; i < seq_ref2.size(); i++) {
         if (seq_ref2[i] > seq_ref2[i - 1]) {
             seq_diff_ref[i] = seq_ref2[i] - seq_ref2[i - 1];
@@ -29,7 +31,7 @@ void create_diff_vector(const vector<uint64_t> &seq_ref2, vector<uint64_t> &seq_
             sumOrig_r += seq_ref2[i];
         }
     }
-    //cerr << " DONE" << endl;
+    std::cerr << " DONE" << endl;
 }
 
 void create_bit_vector(sdsl::bit_vector &bv, const vector<uint64_t> &vec_ref, const uint64_t &n) {
@@ -47,16 +49,19 @@ void create_bit_vector(sdsl::bit_vector &bv, const vector<uint64_t> &vec_ref, co
 
 
 template<class T>
-void test_zombit(T &zombit,
-    const uint32_t b,
+void test_zombit(const uint32_t b,
     const std::string label,
     const vector<uint64_t> &r) {
 
   int32_t max_rec_depth = (int32_t) log2(b);
   float prev_bpp = 1000000.0;
   for (int32_t rec_level = 0; rec_level < max_rec_depth; rec_level++) {
-    zombit.build_zombit(g_bv,rec_level, b, true, g_vec_path, g_block_model);
+    T zombit{};
+    std::cerr << ">> building zombit" << label << " b:" << b << " rec_level:" << rec_level << "...";
+    zombit.build_zombit(g_bv,rec_level, b, false, g_vec_path, g_block_model);
+    std::cerr << "DONE";
 
+    std::cerr << " benchmarking...";
     chrono::duration<double, std::micro> ms_double;
     double time_avg = 0;
     double time_avg_total = 0;
@@ -71,6 +76,7 @@ void test_zombit(T &zombit,
       }
       time_avg_total += (time_avg / r.size());
     }
+    std::cerr << "DONE\n";
 
     float bpp = (float) zombit.size_in_bits() / g_postings_list_size;
     cout << label << ";" << b << ";" << bpp;
@@ -115,6 +121,7 @@ int main(int argc, char *argv[]) {
         vector<uint64_t> seq;
         utils::read_input_file<uint64_t>(argv[1], seq);
         g_postings_list_size = seq.size();
+        std::cerr << ">> inputfile size: " << g_postings_list_size << "\n";
 
         vector<uint64_t> seq_diff(seq.size());
         seq_diff[0] = seq[0];
@@ -124,16 +131,21 @@ int main(int argc, char *argv[]) {
         seq.shrink_to_fit();
 
         // creating bit_vector
+        std::cerr << ">> creating bitvector of size: " << (sumOrig+1) << "...";
         create_bit_vector(g_bv, seq_diff, sumOrig);
+        std::cerr << "Done\n";
+        //sdsl::store_to_file(g_bv, "./data/small_sample_as_bv.dat");
+        //exit(0);
         seq_diff.clear();
         seq_diff.shrink_to_fit();
         //sdsl::store_to_file(bv, "/home/scratch-hdd/osiipola/gov2_as_bitvector.dat");
     } else if (mode == "notraw") {
           sdsl::load_from_file(g_bv, argv[1]);
           g_postings_list_size = 0;
-          for (uint64_t i = 0; i < g_bv.size(); i++) {
-              if (g_bv[i] == 1) g_postings_list_size++;
-          }
+          //for (uint64_t i = 0; i < g_bv.size(); i++) {
+          //    if (g_bv[i] == 1) g_postings_list_size++;
+          //}
+          g_postings_list_size = sdsl::rank_support_v5<1>(&g_bv)(g_bv.size());
     }
 
     // setting global variables
@@ -149,12 +161,13 @@ int main(int argc, char *argv[]) {
 
     // creating test query values
     uint64_t n = g_bv.size() > 1000000 ? 1000000 : g_bv.size();
-    uint64_t u = g_bv.size();
+    uint64_t u = g_bv.size()-2;
     vector<uint64_t> benchmark_quesries(n);
     srand(0);
     for (uint32_t i = 0; i < n; i++) benchmark_quesries[i] = rand() % u + 1;
-    g_bv = sdsl::bit_vector(0);
+    //g_bv = sdsl::bit_vector(0);
 
+    std::cerr << ">> start testing\n";
     cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s;recursio level;nextGEQ avg (μs)\n";
 
     ////////////////////////
@@ -168,33 +181,35 @@ int main(int argc, char *argv[]) {
     // bit_vector, bit_vector, bit_vector
     if (run_mode[0] == '1') {
       for (uint32_t b : block_sizes ) {
-        zombit_bv_bv_bv zombit{};
-        test_zombit(zombit, b, "<bv,bv,bv>", benchmark_quesries);
+        test_zombit<zombit_bv_bv_bv>(b, "<bv,bv,bv>", benchmark_quesries);
       }
     }
 
     ////  bv,bv, rrr
     if (run_mode[1] == '1') {
       for (uint32_t b : block_sizes ) {
-        zombit_bv_bv_rrr zombit{};
-        test_zombit(zombit, b, "<bv,bv,rrr>", benchmark_quesries);
+        test_zombit<zombit_bv_bv_rrr>(b, "<bv,bv,rrr>", benchmark_quesries);
       }
     }
 
-    if (run_mode[2] == '1') {
-      for (uint32_t b : block_sizes ) {
-        zombit_hyb_rrr_rrr zombit{};
-        test_zombit(zombit, b, "<hyb,rrr,rrr>", benchmark_quesries);
-      }
-    }
+    //if (run_mode[2] == '1') {
+    //  for (uint32_t b : block_sizes ) {
+    //    zombit_hyb_rrr_rrr zombit{};
+    //    test_zombit(zombit, b, "<hyb,rrr,rrr>", benchmark_quesries);
+    //  }
+    //}
 
     //  bv,bv,sd
     if (run_mode[3] == '1') {
       for (uint32_t b : block_sizes ) {
-        zombit_bv_bv_sd zombit{};
-        test_zombit(zombit, b, "<bv,bv,sd>", benchmark_quesries);
+        test_zombit<zombit_bv_bv_sd>(b, "<bv,bv,sd>", benchmark_quesries);
       }
     }
+
+    //// pef
+    //if (run_mode[4] == '1') {
+    //  pef_vector_opt<> pef(g_bv, 0.01, 0.3);
+    //}
 
     curr_time = utils::current_time2str();
     cerr << ">> Program END time: " << curr_time << endl;

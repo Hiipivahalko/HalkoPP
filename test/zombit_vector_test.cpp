@@ -364,19 +364,53 @@ TEST(ScanSucc, NextGEQSmallResInNextWordBlock) {
     bv[64 + 60] = 1;
     bv[64 + 62] = 1;
 
+    sdsl::rank_support_v5<1> rank_b(&bv);
+    size_t ones = rank_b(bv.size());
     uint32_t bv_size = bv.size();
     for (int i = 0; i < 2*64; i++) {
-        ASSERT_EQ(succ_scan(bv, i), scan_nextGEQ(bv, i));
+        ASSERT_EQ(succ_scan(bv, rank_b, i, ones), scan_nextGEQ(bv, i));
     }
 }
 
 TEST(ScanSucc, NextGEQSmallResInNextWordBlock2) {
     for (int j = 0; j < 2*64; j++) {
         sdsl::bit_vector bv(2*64);
-
         bv[j] = 1;
+        sdsl::rank_support_v5<1> rank_b(&bv);
+        size_t ones = rank_b(bv.size());
+
         for (int i = 0; i < 2*64; i++) {
-            ASSERT_EQ(succ_scan(bv, i), scan_nextGEQ(bv, i));
+            ASSERT_EQ(succ_scan(bv, rank_b, i, ones), scan_nextGEQ(bv, i));
         }
     }
+}
+
+TEST(ScanSucc, SmallSampleNextGEQ) {
+    sdsl::bit_vector bv;
+    sdsl::load_from_file(bv, "../data/small_sample_as_bv.dat");
+    sdsl::rank_support_v5<1> rank_b(&bv);
+    size_t ones = rank_b(bv.size());
+    for (int i = 0; i < bv.size(); i++) {
+        ASSERT_EQ(succ_scan(bv, rank_b, i, ones), scan_nextGEQ(bv, i));
+    }
+}
+
+TEST(ScanSucc, SmallSampleNextGEQ_zombit) {
+    sdsl::bit_vector bv;
+    sdsl::rank_support_v5<1> rank_b(&bv);
+    size_t ones = sdsl::rank_support_v5<1>(&bv)(bv.size());
+    sdsl::load_from_file(bv, "../data/small_sample_as_bv.dat");
+
+    vector<uint32_t> blocks = {8,16,32,64,128,256,512,1024,2048,4096,8192,16384};
+    for (auto b : blocks) {
+        std::cout << "block: " << b << "\n";
+        zombit_bv_bv_bv zombit{};
+        sdsl::bit_vector bv_t = bv;
+        zombit.build_zombit(bv_t, 0, b, false, "", "div2");
+
+        for (int i = 0; i < bv.size(); i++) {
+            ASSERT_EQ(zombit.nextGEQ(i), scan_nextGEQ(bv, i));
+        }
+    }
+
 }
