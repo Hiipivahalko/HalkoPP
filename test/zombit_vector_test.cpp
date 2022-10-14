@@ -377,7 +377,7 @@ TEST(ScanSucc, NextGEQSmallResInNextWordBlock) {
     size_t ones = rank_b(bv.size());
     uint32_t bv_size = bv.size();
     for (int i = 0; i < 2*64; i++) {
-        ASSERT_EQ(succ_scan(bv,  i, ones), scan_nextGEQ(bv, i));
+        ASSERT_EQ(succ_scan(bv,  i), scan_nextGEQ(bv, i));
     }
 }
 
@@ -389,7 +389,7 @@ TEST(ScanSucc, NextGEQSmallResInNextWordBlock2) {
         size_t ones = rank_b(bv.size());
 
         for (int i = 0; i < 2*64; i++) {
-            ASSERT_EQ(succ_scan(bv,i, ones), scan_nextGEQ(bv, i));
+            ASSERT_EQ(succ_scan(bv,i), scan_nextGEQ(bv, i));
         }
     }
 }
@@ -400,7 +400,7 @@ TEST(ScanSucc, SmallSampleNextGEQ) {
     sdsl::rank_support_v5<1> rank_b(&bv);
     size_t ones = rank_b(bv.size());
     for (int i = 0; i < bv.size(); i++) {
-        ASSERT_EQ(succ_scan(bv, i, ones), scan_nextGEQ(bv, i));
+        ASSERT_EQ(succ_scan(bv, i), scan_nextGEQ(bv, i));
     }
 }
 
@@ -438,12 +438,8 @@ TEST(ScanSucc, RandomBVZeroSuperBlocks) {
         std::shuffle(std::begin(ones), std::end(ones), rng);
         sdsl::bit_vector bv(n);
         for (int j = 0; j < m; j++) bv[ones[j]] = 1;
-        //std::cout << "---\n";
-        //std::cout << bv << "\n";
-        //bv[n-1] = 1;
-        sdsl::rank_support_v5O2<1> rank_b(&bv);
         for (int x = 0; x < n; x++) {
-            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+            ASSERT_EQ(succ_scan(bv, x), scan_nextGEQ(bv, x));
         }
     }
 }
@@ -460,9 +456,8 @@ TEST(ScanSucc, RandomBVFewSuperBlocks) {
         std::shuffle(std::begin(ones), std::end(ones), rng);
         sdsl::bit_vector bv(n);
         for (int j = 0; j < m; j++) bv[ones[j]] = 1;
-        sdsl::rank_support_v5O2<1> rank_b(&bv);
         for (int x = 0; x < n; x++) {
-            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+            ASSERT_EQ(succ_scan(bv, x), scan_nextGEQ(bv, x));
         }
     }
 }
@@ -475,7 +470,7 @@ TEST(ScanSucc, AllZeros) {
         sdsl::bit_vector bv(n);
         sdsl::rank_support_v5O2<1> rank_b(&bv);
         for (int x = 0; x < n; x++) {
-            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+            ASSERT_EQ(succ_scan(bv, x), scan_nextGEQ(bv, x));
         }
     }
 }
@@ -487,9 +482,8 @@ TEST(ScanSucc, AllOnes) {
         int n = rand() % 4096 + 2048; // size of the bv
         sdsl::bit_vector bv(n);
         for (int i = 0; i < n; i++) bv[i] = 1;
-        sdsl::rank_support_v5O2<1> rank_b(&bv);
         for (int x = 0; x < n; x++) {
-            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+            ASSERT_EQ(succ_scan(bv,x), scan_nextGEQ(bv, x));
         }
     }
 }

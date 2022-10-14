@@ -435,7 +435,7 @@ const uint32_t Zombit<T_u_vec,T_u_vec_rank,
  * Why this would be good solution is that if bv is random or have more 1s than 0s,
  * the next 1bit is usually in same word as x or its in the next word.
  */
-inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const uint64_t x, const size_t n_ones) {
+inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const uint64_t x) {
     int next_one_bit = 0;
     uint64_t x_w_idx = x/64;
     uint64_t curr_w_bv = bv.data()[x_w_idx] >> ( x & (64-1) );
@@ -545,7 +545,7 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
             //uint64_t next_one_in_m_block = m_rank(beg_q + delta_x) + 1;
             //if (next_one_in_m_block <= m_ones) {
             //    uint64_t s = m_select( next_one_in_m_block );
-            uint64_t s = succ_scan(m_vector, (beg_q + delta_x), m_ones);
+            uint64_t s = succ_scan(m_vector, (beg_q + delta_x));
             if (s <= beg_q + block_size - 1) {
                 //return (j * block_size) + (s % block_size);
                 return (j * block_size) + (s & (block_size-1));
@@ -558,7 +558,7 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     // jump func in article
     // next 1 is in next block
     //
-    uint64_t j_p = succ_scan(o_vector, j+1, o_ones);
+    uint64_t j_p = succ_scan(o_vector, j+1);
 
     // next block is uniform full of 1s, return first item of block
     if (u_vector[j_p] == 1) {
@@ -568,7 +568,7 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     uint64_t s_p;
     if (rec_level > 0 ) s_p = zombit_rec->nextGEQ(beg_q1);
     //else s_p = m_select( m_rank( beg_q1 ) + 1 );
-    else s_p = succ_scan(m_vector, beg_q1, m_ones);
+    else s_p = succ_scan(m_vector, beg_q1);
     uint64_t beg_j_p = j_p * block_size;
     //uint64_t delta_s_p = s_p % block_size;
     uint64_t delta_s_p = s_p & (block_size-1);
@@ -617,7 +617,7 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     // jump func in article
     // next 1 is in next block
     //
-    uint64_t j_p = o_rank.nextGEQ(o_vector, j+1);//succ_scan(o_vector, o_rank, j+1, o_ones);
+    uint64_t j_p = o_rank.nextGEQ(o_vector, j+1);
 
     // next block is uniform full of 1s, return first item of block
     if (u_vector[j_p] == 1) {
@@ -627,7 +627,7 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     uint64_t s_p;
     if (rec_level > 0 ) s_p = zombit_rec->nextGEQ(beg_q1);
     //else s_p = m_select( m_rank( beg_q1 ) + 1 );
-    else s_p = m_rank.nextGEQ(m_vector, beg_q1);//succ_scan(m_vector, m_rank, beg_q1, m_ones);
+    else s_p = m_rank.nextGEQ(m_vector, beg_q1);
     uint64_t beg_j_p = j_p * block_size;
     //uint64_t delta_s_p = s_p % block_size;
     uint64_t delta_s_p = s_p & (block_size-1);
