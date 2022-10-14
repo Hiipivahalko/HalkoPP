@@ -58,7 +58,7 @@ void test_zombit(const uint32_t b,
   for (int32_t rec_level = 0; rec_level < max_rec_depth; rec_level++) {
     T zombit{};
     std::cerr << ">> building zombit" << label << " b:" << b << " rec_level:" << rec_level << "...";
-    zombit.build_zombit(g_bv,rec_level, b, false, g_vec_path, g_block_model);
+    zombit.build_zombit(g_bv,rec_level, b, true, g_vec_path, g_block_model);
     std::cerr << "DONE";
 
     std::cerr << " benchmarking...";
@@ -68,28 +68,28 @@ void test_zombit(const uint32_t b,
     float bpp;
     double time_avg = 0;
     double time_avg_total = 0;
-    for (uint32_t j = 0; j < 3; j++) {
-      time_avg = 0;
-      for (uint64_t i = 0; i < r.size(); i++) {
-        auto t1 = chrono::high_resolution_clock::now();
-        zombit.nextGEQ_scan(r[i]);
-        auto t2 = chrono::high_resolution_clock::now();
-        ms_double = t2 - t1;
-        time_avg += ms_double.count();
-      }
-      time_avg_total += (time_avg / r.size());
-    }
-    bpp = (float) zombit.size_in_bits(Z_SCAN) / g_postings_list_size;
-    cout << label << ";" << b << ";" << bpp;
-    cout << ";" << ((float)zombit.u_vector_size_in_bits() / g_postings_list_size);
-    cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_SCAN) / g_postings_list_size);
-    cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_SCAN) / g_postings_list_size);
-    cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits(Z_SCAN));
-    cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_SCAN) / zombit.size_in_bits(Z_SCAN));
-    cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_SCAN) / zombit.size_in_bits(Z_SCAN));
-    cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << ";" << rec_level;
+    //for (uint32_t j = 0; j < 3; j++) {
+    //  time_avg = 0;
+    //  for (uint64_t i = 0; i < r.size(); i++) {
+    //    auto t1 = chrono::high_resolution_clock::now();
+    //    zombit.nextGEQ_scan(r[i]);
+    //    auto t2 = chrono::high_resolution_clock::now();
+    //    ms_double = t2 - t1;
+    //    time_avg += ms_double.count();
+    //  }
+    //  time_avg_total += (time_avg / r.size());
+    //}
+    //bpp = (float) zombit.size_in_bits(Z_SCAN) / g_postings_list_size;
+    //cout << label << ";" << b << ";" << bpp;
+    //cout << ";" << ((float)zombit.u_vector_size_in_bits() / g_postings_list_size);
+    //cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_SCAN) / g_postings_list_size);
+    //cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_SCAN) / g_postings_list_size);
+    //cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits(Z_SCAN));
+    //cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_SCAN) / zombit.size_in_bits(Z_SCAN));
+    //cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_SCAN) / zombit.size_in_bits(Z_SCAN));
+    //cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << ";" << rec_level;
 
-    std::cout << ";" << (time_avg_total/3) << ";scan" << "\n";
+    //std::cout << ";" << (time_avg_total/3) << ";scan" << "\n";
 
     // rank scan testing
     time_avg = 0;
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
     //g_bv = sdsl::bit_vector(0);
 
     std::cerr << ">> start testing\n";
-    cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s;recursio level;nextGEQ avg (μs)\n";
+    cout << "zombit<U,O,M>;block size;overall size;U size;O size;M size;U%;O%;M%;number of blocks;mixed blocks;runs of 1s;recursio level;nextGEQ avg (μs);query type\n";
 
     ////////////////////////
     //
@@ -209,16 +209,16 @@ int main(int argc, char *argv[]) {
     // bit_vector, bit_vector, bit_vector
     if (run_mode[0] == '1') {
       for (uint32_t b : block_sizes ) {
-        test_zombit<zombit_bv_bv_bv>(b, "<bv,bv,bv>", benchmark_quesries);
+        test_zombit<zombit_bv_bv_bv_O2>(b, "<bv,bv,bv>", benchmark_quesries);
       }
     }
 
     ////  bv,bv, rrr
-    if (run_mode[1] == '1') {
-      for (uint32_t b : block_sizes ) {
-        test_zombit<zombit_bv_bv_rrr>(b, "<bv,bv,rrr>", benchmark_quesries);
-      }
-    }
+    //if (run_mode[1] == '1') {
+    //  for (uint32_t b : block_sizes ) {
+    //    test_zombit<zombit_bv_bv_rrr>(b, "<bv,bv,rrr>", benchmark_quesries);
+    //  }
+    //}
 
     //if (run_mode[2] == '1') {
     //  for (uint32_t b : block_sizes ) {
@@ -227,12 +227,12 @@ int main(int argc, char *argv[]) {
     //  }
     //}
 
-    //  bv,bv,sd
-    if (run_mode[3] == '1') {
-      for (uint32_t b : block_sizes ) {
-        test_zombit<zombit_bv_bv_sd>(b, "<bv,bv,sd>", benchmark_quesries);
-      }
-    }
+    ////  bv,bv,sd
+    //if (run_mode[3] == '1') {
+    //  for (uint32_t b : block_sizes ) {
+    //    test_zombit<zombit_bv_bv_sd>(b, "<bv,bv,sd>", benchmark_quesries);
+    //  }
+    //}
 
     //// pef
     //if (run_mode[4] == '1') {
