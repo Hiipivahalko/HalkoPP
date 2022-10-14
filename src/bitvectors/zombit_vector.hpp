@@ -6,7 +6,11 @@
 #include <sdsl/bit_vectors.hpp>
 #include <vector>
 #include <string>
+#include <sdsl/rank_support_v5O2.hpp>
 
+const std::string Z_RS = "rank_select";
+const std::string Z_SCAN = "scan";
+const std::string Z_RANK_SCAN = "rank_scan";
 
 template <
     typename T_u_vec, typename T_u_vec_rank,
@@ -23,11 +27,13 @@ class Zombit {
         void build_zombit(sdsl::bit_vector &X, const uint32_t recursio_level, const uint32_t b, const bool top_level, const std::string vec_path, const std::string m);
         const uint32_t access(const uint64_t i); // return value of i-th bit
         const uint64_t nextGEQ(const uint64_t x) const; // return next greater or equal than x
+        const uint64_t nextGEQ_scan(const uint64_t x) const; // return next greater or equal than x
+        const uint64_t nextGEQ_rank_scan(const uint64_t x) const; // return next greater or equal than x
         const uint64_t size(); // return lenght of the original bitvector
-        const uint64_t size_in_bits();
+        const uint64_t size_in_bits(std::string mode);
         const uint64_t u_vector_size_in_bits();
-        const uint64_t o_vector_size_in_bits();
-        const uint64_t m_vector_size_in_bits();
+        const uint64_t o_vector_size_in_bits(std::string mode);
+        const uint64_t m_vector_size_in_bits(std::string mode);
 
         uint32_t block_size;
         uint64_t orig_bv_size = 0;
@@ -429,24 +435,15 @@ const uint32_t Zombit<T_u_vec,T_u_vec_rank,
  * Why this would be good solution is that if bv is random or have more 1s than 0s,
  * the next 1bit is usually in same word as x or its in the next word.
  */
-inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const sdsl::rank_support_v5<1> &rank_bv, const uint64_t x, const size_t n_ones) {
+inline const uint64_t succ_scan(const sdsl::bit_vector &bv, const uint64_t x, const size_t n_ones) {
     int next_one_bit = 0;
     uint64_t x_w_idx = x/64;
-    //std::cout << rank_bv(x) << "\n";
-    //if (rank_bv(x) == n_ones && bv[x] == 0) {
-    //    return 0;
-    //}
     uint64_t curr_w_bv = bv.data()[x_w_idx] >> ( x & (64-1) );
-    //std::cerr << "---\n";
-    //std::cerr << "x: " << x << ", x_w_idx: " << x_w_idx << ", curr_w_bv: " << curr_w_bv << ", x%64: " << ( 64 - (x & 63) - 1) << "\n";
     if (curr_w_bv > 0) return x + __builtin_ctzll(curr_w_bv); // next 1bit is in the same word block
     // next possible 1bit is in some of the next word blocks
     uint64_t bv_words = (uint64_t) ceil((bv.size()/64.0));//; + 1;
-    //std::cerr << "bv_words: " << bv_words << "\n";
     for (uint64_t i = 1; i <= ( bv_words - x_w_idx - 1 ); i++) {
-        //std::cerr << bv.data()[i+(x/64)] << "\n";
         if (bv.data()[i + (x/64)] > 0) {
-            //std::cerr << "ctz:" << __builtin_ctzll(bv.data()[i+x_w_idx]) << ", i*64: " << ((i-1)*64) << "\n";
             return  __builtin_ctzll(
                         bv.data()[ i + x_w_idx ]
                     ) + ((i-1)*64) + x + 1 + ( 64 - (x & 63) - 1);
@@ -499,18 +496,11 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     // next 1 is in next block
     //
     //////////// NORMAL SUCC with rank and select
-    //uint64_t next_block_with_ones = o_rank(j+1) + 1;
-    //if (next_block_with_ones > o_ones) {
-    //    return 0; // no bigger or equal value than x
-    //}
-    //uint64_t j_p = o_select( next_block_with_ones );
-
-    ///////// SUCC with scan;
-    //std::cerr << "here1\n";
-    uint64_t j_p = succ_scan(o_vector, o_rank, j+1, o_ones);
-    //std::cerr << "here2\n";
-
-
+    uint64_t next_block_with_ones = o_rank(j+1) + 1;
+    if (next_block_with_ones > o_ones) {
+        return 0; // no bigger or equal value than x
+    }
+    uint64_t j_p = o_select( next_block_with_ones );
 
     // next block is uniform full of 1s, return first item of block
     if (u_vector[j_p] == 1) {
@@ -520,6 +510,124 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     uint64_t s_p;
     if (rec_level > 0 ) s_p = zombit_rec->nextGEQ(beg_q1);
     else s_p = m_select( m_rank( beg_q1 ) + 1 );
+    uint64_t beg_j_p = j_p * block_size;
+    //uint64_t delta_s_p = s_p % block_size;
+    uint64_t delta_s_p = s_p & (block_size-1);
+    return beg_j_p + delta_s_p;
+}
+
+template <
+    typename T_u_vec, typename T_u_vec_rank,
+    typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
+    typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
+    >
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ_scan(const uint64_t x) const {
+    uint64_t j = x / block_size;
+    uint64_t q = u_rank(j);
+    // x is in uniform block of 1s
+    if (u_vector[j] == 1) {
+        if (o_vector[j] == 1) {
+            return x;
+        }
+    } else {
+        uint64_t beg_q = q * block_size;
+        //uint64_t delta_x = x % block_size;
+        uint64_t delta_x = x & (block_size - 1);
+        if (rec_level > 0) {
+            uint64_t s = zombit_rec->nextGEQ(beg_q + delta_x);
+            if (s <= beg_q + block_size - 1) {
+                //return (j * block_size) + (s % block_size);
+                return (j * block_size) + (s & (block_size-1));
+            }
+        } else { // normal nextGEQ query on m
+            //uint64_t next_one_in_m_block = m_rank(beg_q + delta_x) + 1;
+            //if (next_one_in_m_block <= m_ones) {
+            //    uint64_t s = m_select( next_one_in_m_block );
+            uint64_t s = succ_scan(m_vector, (beg_q + delta_x), m_ones);
+            if (s <= beg_q + block_size - 1) {
+                //return (j * block_size) + (s % block_size);
+                return (j * block_size) + (s & (block_size-1));
+            }
+            //}
+        }
+    }
+    // x is in fixed block or block of 0s
+
+    // jump func in article
+    // next 1 is in next block
+    //
+    uint64_t j_p = succ_scan(o_vector, j+1, o_ones);
+
+    // next block is uniform full of 1s, return first item of block
+    if (u_vector[j_p] == 1) {
+        return j_p * block_size;
+    }
+    uint64_t beg_q1 = u_vector[j] ? q * block_size : (q+1) * block_size;
+    uint64_t s_p;
+    if (rec_level > 0 ) s_p = zombit_rec->nextGEQ(beg_q1);
+    //else s_p = m_select( m_rank( beg_q1 ) + 1 );
+    else s_p = succ_scan(m_vector, beg_q1, m_ones);
+    uint64_t beg_j_p = j_p * block_size;
+    //uint64_t delta_s_p = s_p % block_size;
+    uint64_t delta_s_p = s_p & (block_size-1);
+    return beg_j_p + delta_s_p;
+}
+
+template <
+    typename T_u_vec, typename T_u_vec_rank,
+    typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
+    typename T_m_vec, typename T_m_vec_rank, typename T_m_vec_slc
+    >
+const uint64_t Zombit<T_u_vec,T_u_vec_rank,
+      T_o_vec,T_o_vec_rank,T_o_vec_slc,
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::nextGEQ_rank_scan(const uint64_t x) const {
+    uint64_t j = x / block_size;
+    uint64_t q = u_rank(j);
+    // x is in uniform block of 1s
+    if (u_vector[j] == 1) {
+        if (o_vector[j] == 1) {
+            return x;
+        }
+    } else {
+        uint64_t beg_q = q * block_size;
+        //uint64_t delta_x = x % block_size;
+        uint64_t delta_x = x & (block_size - 1);
+        if (rec_level > 0) {
+            uint64_t s = zombit_rec->nextGEQ(beg_q + delta_x);
+            if (s <= beg_q + block_size - 1) {
+                //return (j * block_size) + (s % block_size);
+                return (j * block_size) + (s & (block_size-1));
+            }
+        } else { // normal nextGEQ query on m
+            //uint64_t next_one_in_m_block = m_rank(beg_q + delta_x) + 1;
+            //if (next_one_in_m_block <= m_ones) {
+            //    uint64_t s = m_select( next_one_in_m_block );
+            uint64_t s = m_rank.nextGEQ(m_vector, beg_q + delta_x);
+            if (s <= beg_q + block_size - 1) {
+                //return (j * block_size) + (s % block_size);
+                return (j * block_size) + (s & (block_size-1));
+            }
+            //}
+        }
+    }
+    // x is in fixed block or block of 0s
+
+    // jump func in article
+    // next 1 is in next block
+    //
+    uint64_t j_p = o_rank.nextGEQ(o_vector, j+1);//succ_scan(o_vector, o_rank, j+1, o_ones);
+
+    // next block is uniform full of 1s, return first item of block
+    if (u_vector[j_p] == 1) {
+        return j_p * block_size;
+    }
+    uint64_t beg_q1 = u_vector[j] ? q * block_size : (q+1) * block_size;
+    uint64_t s_p;
+    if (rec_level > 0 ) s_p = zombit_rec->nextGEQ(beg_q1);
+    //else s_p = m_select( m_rank( beg_q1 ) + 1 );
+    else s_p = m_rank.nextGEQ(m_vector, beg_q1);//succ_scan(m_vector, m_rank, beg_q1, m_ones);
     uint64_t beg_j_p = j_p * block_size;
     //uint64_t delta_s_p = s_p % block_size;
     uint64_t delta_s_p = s_p & (block_size-1);
@@ -552,6 +660,7 @@ const uint64_t Zombit<T_u_vec,T_u_vec_rank,
     return this_level_size;
 }
 
+// o_vector size
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -559,14 +668,23 @@ template <
     >
 const uint64_t Zombit<T_u_vec,T_u_vec_rank,
       T_o_vec,T_o_vec_rank,T_o_vec_slc,
-      T_m_vec,T_m_vec_rank,T_m_vec_slc>::o_vector_size_in_bits() {
-    uint64_t this_level_size = (sdsl::size_in_bytes(o_vector) * 8) + \
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::o_vector_size_in_bits(std::string mode) {
+    uint64_t this_level_size;
+    if (mode == Z_SCAN) {
+        this_level_size = (sdsl::size_in_bytes(o_vector)*8);
+    } else if (mode == Z_RANK_SCAN) {
+        this_level_size = (sdsl::size_in_bytes(o_vector)*8) + o_rank.nextGEQ_rank_size_in_bits();
+    } else {
+        this_level_size = (sdsl::size_in_bytes(o_vector) * 8) + \
         (sdsl::size_in_bytes(o_rank) * 8) + \
         (sdsl::size_in_bytes(o_select) * 8);
-    if (rec_level > 0) return this_level_size + zombit_rec->o_vector_size_in_bits();
+    }
+
+    if (rec_level > 0) return this_level_size + zombit_rec->o_vector_size_in_bits(mode);
     return this_level_size;
 }
 
+// m_vector size
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -574,13 +692,19 @@ template <
     >
 const uint64_t Zombit<T_u_vec,T_u_vec_rank,
       T_o_vec,T_o_vec_rank,T_o_vec_slc,
-      T_m_vec,T_m_vec_rank,T_m_vec_slc>::m_vector_size_in_bits() {
-    if (rec_level > 0) return zombit_rec->m_vector_size_in_bits();
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::m_vector_size_in_bits(std::string mode) {
+    if (rec_level > 0) return zombit_rec->m_vector_size_in_bits(mode);
+    if (mode == Z_SCAN) {
+        return (sdsl::size_in_bytes(m_vector)*8);
+    } else if (mode == Z_RANK_SCAN) {
+        return (sdsl::size_in_bytes(m_vector)*8) + (m_rank.nextGEQ_rank_size_in_bits());
+    }
     return (sdsl::size_in_bytes(m_vector) * 8) + \
         (sdsl::size_in_bytes(m_rank) * 8) + \
         (sdsl::size_in_bytes(m_select) * 8);
 }
 
+// total size
 template <
     typename T_u_vec, typename T_u_vec_rank,
     typename T_o_vec, typename T_o_vec_rank, typename T_o_vec_slc,
@@ -588,10 +712,9 @@ template <
     >
 const uint64_t Zombit<T_u_vec,T_u_vec_rank,
       T_o_vec,T_o_vec_rank,T_o_vec_slc,
-      T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits() {
-    return u_vector_size_in_bits() + o_vector_size_in_bits() + m_vector_size_in_bits();
+      T_m_vec,T_m_vec_rank,T_m_vec_slc>::size_in_bits(std::string mode) {
+    return u_vector_size_in_bits() + o_vector_size_in_bits(mode) + m_vector_size_in_bits(mode);
 }
-
 
 
 typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5<0>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv;
@@ -661,5 +784,6 @@ typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::rrr_vec
 typedef Zombit<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_rrr_rrr_rrr;
 typedef Zombit<sdsl::hyb_vector<>, sdsl::hyb_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_hyb_rrr_rrr;
 
+typedef Zombit<sdsl::bit_vector, sdsl::rank_support_v5O2<0>,sdsl::bit_vector, sdsl::rank_support_v5O2<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5O2<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv_O2;
 
 #endif

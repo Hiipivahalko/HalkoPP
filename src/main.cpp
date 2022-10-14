@@ -63,32 +63,60 @@ void test_zombit(const uint32_t b,
 
     std::cerr << " benchmarking...";
     chrono::duration<double, std::micro> ms_double;
+
+    // scan testing
+    float bpp;
     double time_avg = 0;
     double time_avg_total = 0;
     for (uint32_t j = 0; j < 3; j++) {
       time_avg = 0;
       for (uint64_t i = 0; i < r.size(); i++) {
         auto t1 = chrono::high_resolution_clock::now();
-        zombit.nextGEQ(r[i]);
+        zombit.nextGEQ_scan(r[i]);
         auto t2 = chrono::high_resolution_clock::now();
         ms_double = t2 - t1;
         time_avg += ms_double.count();
       }
       time_avg_total += (time_avg / r.size());
     }
-    std::cerr << "DONE\n";
-
-    float bpp = (float) zombit.size_in_bits() / g_postings_list_size;
+    bpp = (float) zombit.size_in_bits(Z_SCAN) / g_postings_list_size;
     cout << label << ";" << b << ";" << bpp;
     cout << ";" << ((float)zombit.u_vector_size_in_bits() / g_postings_list_size);
-    cout << ";" << ((float)zombit.o_vector_size_in_bits() / g_postings_list_size);
-    cout << ";" << ((float)zombit.m_vector_size_in_bits() / g_postings_list_size);
-    cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits());
-    cout << ";" << ((float)zombit.o_vector_size_in_bits() / zombit.size_in_bits());
-    cout << ";" << ((float)zombit.m_vector_size_in_bits() / zombit.size_in_bits());
+    cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_SCAN) / g_postings_list_size);
+    cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_SCAN) / g_postings_list_size);
+    cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits(Z_SCAN));
+    cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_SCAN) / zombit.size_in_bits(Z_SCAN));
+    cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_SCAN) / zombit.size_in_bits(Z_SCAN));
     cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << ";" << rec_level;
 
-    std::cout << ";" << (time_avg_total/3) << "\n";
+    std::cout << ";" << (time_avg_total/3) << ";scan" << "\n";
+
+    // rank scan testing
+    time_avg = 0;
+    time_avg_total = 0;
+    for (uint32_t j = 0; j < 3; j++) {
+      time_avg = 0;
+      for (uint64_t i = 0; i < r.size(); i++) {
+        auto t1 = chrono::high_resolution_clock::now();
+        zombit.nextGEQ_rank_scan(r[i]);
+        auto t2 = chrono::high_resolution_clock::now();
+        ms_double = t2 - t1;
+        time_avg += ms_double.count();
+      }
+      time_avg_total += (time_avg / r.size());
+    }
+    bpp = (float) zombit.size_in_bits(Z_RANK_SCAN) / g_postings_list_size;
+    cout << label << ";" << b << ";" << bpp;
+    cout << ";" << ((float)zombit.u_vector_size_in_bits() / g_postings_list_size);
+    cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_RANK_SCAN) / g_postings_list_size);
+    cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_RANK_SCAN) / g_postings_list_size);
+    cout << ";" << ((float)zombit.u_vector_size_in_bits() / zombit.size_in_bits(Z_RANK_SCAN));
+    cout << ";" << ((float)zombit.o_vector_size_in_bits(Z_RANK_SCAN) / zombit.size_in_bits(Z_RANK_SCAN));
+    cout << ";" << ((float)zombit.m_vector_size_in_bits(Z_RANK_SCAN) / zombit.size_in_bits(Z_RANK_SCAN));
+    cout << ";" << zombit.block_n << ";" << zombit.m_blocks << ";" << zombit.runs_n << ";" << rec_level;
+    std::cout << ";" << (time_avg_total/3) << ";rank_scan" << "\n";
+    std::cerr << "DONE\n";
+
     //std::string uname = "./data/zombit/small_u_vec_b" + std::to_string(b) + ".dat";
     //std::string oname = "./data/zombit/small_o_vec_b" + std::to_string(b) + ".dat";
     //std::string mname = "./data/zombit/small_m_vec_b" + std::to_string(b) + ".dat";

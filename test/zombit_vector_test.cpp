@@ -6,6 +6,7 @@
 #include <random>
 #include <tuple>
 #include <math.h>
+#include <sdsl/rank_support_v5O2.hpp>
 
 using namespace std;
 
@@ -117,6 +118,8 @@ typedef TypeDefinitions<sdsl::hyb_vector<>, sdsl::hyb_vector<>::rank_0_type,sdsl
 typedef TypeDefinitions<sdsl::hyb_vector<>, sdsl::hyb_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type, sdsl::sd_vector<>::select_1_type> zombit_hyb_rrr_sd_test;
 typedef TypeDefinitions<sdsl::hyb_vector<>, sdsl::hyb_vector<>::rank_0_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type,sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type, sdsl::rrr_vector<>::select_1_type> zombit_hyb_rrr_rrr_test;
 
+typedef TypeDefinitions<sdsl::bit_vector, sdsl::rank_support_v5O2<0>,sdsl::bit_vector, sdsl::rank_support_v5O2<1>, sdsl::select_support_mcl<1>,sdsl::bit_vector, sdsl::rank_support_v5O2<1>, sdsl::select_support_mcl<1>> zombit_bv_bv_bv_test_O2;
+
 // helper function for NextGEQ test
 uint64_t scan_nextGEQ(sdsl::bit_vector &bv, uint64_t x) {
     uint64_t res = 0;
@@ -129,7 +132,7 @@ uint64_t scan_nextGEQ(sdsl::bit_vector &bv, uint64_t x) {
     return res;
 }
 
-using TestTypes = ::testing::Types< zombit_bv_bv_bv_test >;
+using TestTypes = ::testing::Types< zombit_bv_bv_bv_test_O2 >;
 //using TestTypes = ::testing::Types< zombit_bvIL_bvIL_bvIL_test >;
 //using TestTypes = ::testing::Types< zombit_bv_bv_bv_test,zombit_bvIL_bvIL_bvIL_test,zombit_sd_sd_sd_test,zombit_rrr_rrr_rrr_test >;
 TYPED_TEST_CASE(ZombitTest, TestTypes);
@@ -303,6 +306,8 @@ TYPED_TEST(ZombitTest, random_bv1_small) {
             this->zom_vec.build_zombit(bv,0,4);
             for (int x = 0; x < n; x++) {
                 ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
+                ASSERT_EQ(this->zom_vec.nextGEQ_scan(x), scan_nextGEQ(bv, x));
+                ASSERT_EQ(this->zom_vec.nextGEQ_rank_scan(x), scan_nextGEQ(bv, x));
             }
         }
     }
@@ -326,6 +331,8 @@ TYPED_TEST(ZombitTest, random_bv1_big) {
             this->zom_vec.build_zombit(bv,0,128);
             for (int x = 0; x < n; x++) {
                 ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv, x));
+                ASSERT_EQ(this->zom_vec.nextGEQ_scan(x), scan_nextGEQ(bv, x));
+                ASSERT_EQ(this->zom_vec.nextGEQ_rank_scan(x), scan_nextGEQ(bv, x));
             }
         }
     }
@@ -346,6 +353,8 @@ TYPED_TEST(ZombitTest, NextGEQSmall1) {
 
           for (uint32_t x = 0; x < bv_size; x++) {
             ASSERT_EQ(this->zom_vec.nextGEQ(x), scan_nextGEQ(bv_temp, x));
+            ASSERT_EQ(this->zom_vec.nextGEQ_scan(x), scan_nextGEQ(bv, x));
+            ASSERT_EQ(this->zom_vec.nextGEQ_rank_scan(x), scan_nextGEQ(bv, x));
           }
         }
     }
@@ -368,7 +377,7 @@ TEST(ScanSucc, NextGEQSmallResInNextWordBlock) {
     size_t ones = rank_b(bv.size());
     uint32_t bv_size = bv.size();
     for (int i = 0; i < 2*64; i++) {
-        ASSERT_EQ(succ_scan(bv, rank_b, i, ones), scan_nextGEQ(bv, i));
+        ASSERT_EQ(succ_scan(bv,  i, ones), scan_nextGEQ(bv, i));
     }
 }
 
@@ -380,7 +389,7 @@ TEST(ScanSucc, NextGEQSmallResInNextWordBlock2) {
         size_t ones = rank_b(bv.size());
 
         for (int i = 0; i < 2*64; i++) {
-            ASSERT_EQ(succ_scan(bv, rank_b, i, ones), scan_nextGEQ(bv, i));
+            ASSERT_EQ(succ_scan(bv,i, ones), scan_nextGEQ(bv, i));
         }
     }
 }
@@ -391,7 +400,7 @@ TEST(ScanSucc, SmallSampleNextGEQ) {
     sdsl::rank_support_v5<1> rank_b(&bv);
     size_t ones = rank_b(bv.size());
     for (int i = 0; i < bv.size(); i++) {
-        ASSERT_EQ(succ_scan(bv, rank_b, i, ones), scan_nextGEQ(bv, i));
+        ASSERT_EQ(succ_scan(bv, i, ones), scan_nextGEQ(bv, i));
     }
 }
 
@@ -404,13 +413,83 @@ TEST(ScanSucc, SmallSampleNextGEQ_zombit) {
     vector<uint32_t> blocks = {8,16,32,64,128,256,512,1024,2048,4096,8192,16384};
     for (auto b : blocks) {
         std::cout << "block: " << b << "\n";
-        zombit_bv_bv_bv zombit{};
+        zombit_bv_bv_bv_O2 zombit{};
         sdsl::bit_vector bv_t = bv;
         zombit.build_zombit(bv_t, 0, b, false, "", "div2");
 
         for (int i = 0; i < bv.size(); i++) {
             ASSERT_EQ(zombit.nextGEQ(i), scan_nextGEQ(bv, i));
+            ASSERT_EQ(zombit.nextGEQ_scan(i), scan_nextGEQ(bv, i));
+            ASSERT_EQ(zombit.nextGEQ_rank_scan(i), scan_nextGEQ(bv, i));
         }
     }
 
+}
+
+TEST(ScanSucc, RandomBVZeroSuperBlocks) {
+    int rounds = 1000;
+    srand(1);
+    for (int i = 0; i < rounds; i++) {
+        int n = rand() % 20 + 90; // size of the bv
+        int m = rand() % n; // number of 1s
+        vector<int> ones(n);
+        for (int j = 0; j < n; j++) ones[j] = j;
+        auto rng = std::default_random_engine {};
+        std::shuffle(std::begin(ones), std::end(ones), rng);
+        sdsl::bit_vector bv(n);
+        for (int j = 0; j < m; j++) bv[ones[j]] = 1;
+        //std::cout << "---\n";
+        //std::cout << bv << "\n";
+        //bv[n-1] = 1;
+        sdsl::rank_support_v5O2<1> rank_b(&bv);
+        for (int x = 0; x < n; x++) {
+            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+        }
+    }
+}
+
+TEST(ScanSucc, RandomBVFewSuperBlocks) {
+    int rounds = 1000;
+    srand(1);
+    for (int i = 0; i < rounds; i++) {
+        int n = rand() % 4096 + 2048; // size of the bv
+        int m = rand() % n; // number of 1s
+        vector<int> ones(n);
+        for (int j = 0; j < n; j++) ones[j] = j;
+        auto rng = std::default_random_engine {};
+        std::shuffle(std::begin(ones), std::end(ones), rng);
+        sdsl::bit_vector bv(n);
+        for (int j = 0; j < m; j++) bv[ones[j]] = 1;
+        sdsl::rank_support_v5O2<1> rank_b(&bv);
+        for (int x = 0; x < n; x++) {
+            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+        }
+    }
+}
+
+TEST(ScanSucc, AllZeros) {
+    int rounds = 100;
+    srand(1);
+    for (int i = 0; i < rounds; i++) {
+        int n = rand() % 4096 + 2048; // size of the bv
+        sdsl::bit_vector bv(n);
+        sdsl::rank_support_v5O2<1> rank_b(&bv);
+        for (int x = 0; x < n; x++) {
+            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+        }
+    }
+}
+
+TEST(ScanSucc, AllOnes) {
+    int rounds = 100;
+    srand(1);
+    for (int i = 0; i < rounds; i++) {
+        int n = rand() % 4096 + 2048; // size of the bv
+        sdsl::bit_vector bv(n);
+        for (int i = 0; i < n; i++) bv[i] = 1;
+        sdsl::rank_support_v5O2<1> rank_b(&bv);
+        for (int x = 0; x < n; x++) {
+            ASSERT_EQ(rank_b.nextGEQ(bv, x), scan_nextGEQ(bv, x));
+        }
+    }
 }
