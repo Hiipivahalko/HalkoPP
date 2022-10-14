@@ -6,7 +6,8 @@
 #include <sdsl/bit_vectors.hpp>
 #include <vector>
 #include <string>
-#include <sdsl/rank_support_v5O2.hpp>
+//#include <sdsl/rank_support_v5O2.hpp>
+#include "./rank_support_v5O2.hpp"
 
 const std::string Z_RS = "rank_select";
 const std::string Z_SCAN = "scan";

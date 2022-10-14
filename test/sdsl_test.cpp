@@ -7,7 +7,8 @@
 #include <math.h>
 #include <string>
 #include <sdsl/rank_support_v5_ossi.hpp>
-#include <sdsl/rank_support_v5O2.hpp>
+//#include <sdsl/rank_support_v5O2.hpp>
+#include "../src/bitvectors/rank_support_v5O2.hpp"
 
 using namespace std;
 

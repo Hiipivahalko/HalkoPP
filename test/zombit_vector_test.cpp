@@ -1,4 +1,5 @@
 #include "../src/bitvectors/zombit_vector.hpp"
+#include "../src/bitvectors/rank_support_v5O2.hpp"
 #include <gtest/gtest.h>
 #include <sdsl/bit_vectors.hpp>
 #include <iostream>
@@ -6,7 +7,7 @@
 #include <random>
 #include <tuple>
 #include <math.h>
-#include <sdsl/rank_support_v5O2.hpp>
+//#include <sdsl/rank_support_v5O2.hpp>
 
 using namespace std;
 
@@ -418,9 +419,10 @@ TEST(ScanSucc, SmallSampleNextGEQ_zombit) {
         zombit.build_zombit(bv_t, 0, b, false, "", "div2");
 
         for (int i = 0; i < bv.size(); i++) {
-            ASSERT_EQ(zombit.nextGEQ(i), scan_nextGEQ(bv, i));
-            ASSERT_EQ(zombit.nextGEQ_scan(i), scan_nextGEQ(bv, i));
-            ASSERT_EQ(zombit.nextGEQ_rank_scan(i), scan_nextGEQ(bv, i));
+            uint64_t result = scan_nextGEQ(bv, i);
+            ASSERT_EQ(zombit.nextGEQ(i), result);
+            ASSERT_EQ(zombit.nextGEQ_scan(i), result);
+            ASSERT_EQ(zombit.nextGEQ_rank_scan(i), result);
         }
     }
 
