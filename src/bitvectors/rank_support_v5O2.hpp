@@ -183,38 +183,27 @@ class rank_support_v5O2 : public rank_support
         inline const uint64_t nextGEQ(const bit_vector &bv, const uint64_t x) const {
             uint64_t w_idx = x/64;
             uint64_t curr_w_bv = bv.data()[x/64] >> ( x & (64-1) );
-            //std::cout << "x: " << x << " w_idx:" << w_idx << " curr_w_bv:" << curr_w_bv << " bv[x]:" << bv[x] << " bv_w:" << (bv.size()/64) << "\n";
             if (curr_w_bv > 0) return x + __builtin_ctzll(curr_w_bv); // next 1bit is in the same word block
             if (x/64 == bv.size()/64) return 0;
-            // next possible 1bit is in some of the next word blocks
             uint64_t s_b_idx = x / 2048;
             uint64_t end_idx = (super_blocks.size() == 0) || ((x / 2048) >= super_blocks.size()-1)  ? bv.size() / 64 : (s_b_idx+1)*32+32-1;
-            //std::cout << "end_idx: " << end_idx << " s_b:" << s_b_idx << "\n";
-            //std::cout << "w_idx:" << w_idx << " s_b:" << s_b_idx << " #super_blocks: " << super_blocks.size() << "\n";
             for (uint64_t i = w_idx+1; i < end_idx; i++) {
-                //std::cout << "bv_data[i]:" << bv.data()[i] << " i:" << i << "\n";
                 if (bv.data()[i] > 0) {
-                    //std::cout << "here1\n";
                     return __builtin_ctzll(bv.data()[i]) + i*64;// + (64 - (x & 63) -1);
                 }
             }
 
             // find next super block that have 1-bit
-            //std::cout << "s_b[i]:" << super_blocks[s_b_idx] << " w_idx:" << w_idx << ", " << bv.data()[w_idx] << "\n";
             while (s_b_idx + 1 < super_blocks.size() && super_blocks[s_b_idx] == super_blocks[s_b_idx+1]) {
-                //std::cout << "s_b[i]:" << super_blocks[s_b_idx] << " s_b[i+1]:" << super_blocks[s_b_idx+1] << " w_idx:" << w_idx << "\n";
                 s_b_idx++;
             }
 
             w_idx = (x / 2048) == s_b_idx ? (x/64) + 1 : (s_b_idx) * 32 + 32 - 1;
             for (uint64_t i = w_idx; i <= bv.size()/64; i++) {
-                //std::cout << "bv_data[i]:" << bv.data()[i] << " i:" << i << "\n";
                 if (bv.data()[i] > 0) {
-                    //std::cout << "here2\n";
                     return __builtin_ctzll(bv.data()[i]) + i*64;// + (64 - (x & 63) -1);
                 }
             }
-            //std::cout << "here4\n";
             return 0; // there is not equeal or bigger val in bv
         }
 
